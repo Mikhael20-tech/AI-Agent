@@ -5,6 +5,113 @@
  * Filter Divisi, Compact Name Badges (Bebas Tumpukan), & Real-time Telegram Celebration!
  */
 
+/**
+ * Furniture Model Manager (Claw3D Remix)
+ * Loads, caches, and automatically centers & scales .glb furniture models from Kenney / Claw3D Kit
+ */
+class FurnitureManager {
+  constructor() {
+    this.loader = (window.THREE && window.THREE.GLTFLoader) ? new window.THREE.GLTFLoader() : null;
+    this.cache = new Map();
+    this.pending = new Map();
+    this.basePath = '/models/furniture/';
+  }
+
+  load(name, onLoad) {
+    if (this.cache.has(name)) {
+      const inst = this.createInstance(name);
+      if (inst && onLoad) onLoad(inst);
+      return;
+    }
+
+    if (!this.pending.has(name)) {
+      this.pending.set(name, []);
+      if (this.loader) {
+        this.loader.load(
+          `${this.basePath}${name}.glb`,
+          (gltf) => {
+            const root = gltf.scene;
+            root.traverse((child) => {
+              if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+                if (child.material) {
+                  child.material.roughness = 0.55;
+                  child.material.metalness = 0.12;
+                }
+              }
+            });
+            this.cache.set(name, root);
+            const cbs = this.pending.get(name) || [];
+            this.pending.delete(name);
+            cbs.forEach(cb => {
+              const inst = this.createInstance(name);
+              if (inst) cb(inst);
+            });
+          },
+          undefined,
+          (err) => {
+            console.warn(`[FurnitureManager] Fallback: failed to load ${name}.glb`, err);
+          }
+        );
+      }
+    }
+
+    if (onLoad) {
+      this.pending.get(name).push(onLoad);
+    }
+  }
+
+  createInstance(name) {
+    const original = this.cache.get(name);
+    if (!original) return null;
+    const cloned = original.clone(true);
+
+    cloned.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (child.material) {
+          child.material = Array.isArray(child.material)
+            ? child.material.map(m => m.clone())
+            : child.material.clone();
+        }
+      }
+    });
+
+    const pivot = new THREE.Group();
+    const box = new THREE.Box3().setFromObject(cloned);
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+
+    cloned.position.x = -center.x;
+    cloned.position.z = -center.z;
+    cloned.position.y = -box.min.y;
+
+    pivot.add(cloned);
+    pivot.userData.rawSize = size;
+    return pivot;
+  }
+
+  fit(group, { targetHeight, targetWidth, targetDepth }) {
+    if (!group) return group;
+    const raw = group.userData.rawSize;
+    if (!raw) return group;
+    let scale = 1;
+    if (targetHeight && raw.y > 0) {
+      scale = targetHeight / raw.y;
+    } else if (targetWidth && raw.x > 0) {
+      scale = targetWidth / raw.x;
+    } else if (targetDepth && raw.z > 0) {
+      scale = targetDepth / raw.z;
+    }
+    group.scale.set(scale, scale, scale);
+    return group;
+  }
+}
+
 export class VirtualOffice3D {
   constructor(containerId, overlayContainerId) {
     this.container = document.getElementById(containerId);
@@ -15,6 +122,9 @@ export class VirtualOffice3D {
     this.labelsVisible = true;
     this.activeFilter = 'all';
     this.selectedAgent = null;
+
+    // Inisialisasi Furniture Asset Manager dari Claw3D
+    this.furniture = new FurnitureManager();
 
     // Raycasting untuk interaksi klik
     this.raycaster = new THREE.Raycaster();
@@ -193,19 +303,20 @@ export class VirtualOffice3D {
     // Signboard Zona Akuntansi
     this.createZoneSign(-20, 11, -27.5, 'DIVISI KEUANGAN & AUDIT', 0xd946ef);
 
-    // Lemari Arsip Berkas
-    const cab1 = new THREE.Mesh(
-      new THREE.BoxGeometry(2.4, 8.5, 9.0),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    cab1.position.set(-35.5, 4.25, -16);
-    cab1.castShadow = true;
-    this.scene.add(cab1);
+    // Lemari Arsip Berkas Berjejer (Bookcase Closed dari Claw3D)
+    [-19, -13].forEach(z => {
+      this.furniture.load('bookcaseClosed', (bookcase) => {
+        this.furniture.fit(bookcase, { targetHeight: 7.8 });
+        bookcase.position.set(-35.5, 0, z);
+        bookcase.rotation.y = Math.PI / 2;
+        this.scene.add(bookcase);
+      });
+    });
 
-    // Brankas Kasir
+    // Brankas Kasir Logam
     const safe = new THREE.Mesh(
       new THREE.BoxGeometry(2.6, 3.5, 2.6),
-      new THREE.MeshLambertMaterial({ color: 0x334155 })
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 })
     );
     safe.position.set(-35.2, 1.75, -7);
     safe.castShadow = true;
@@ -284,24 +395,23 @@ export class VirtualOffice3D {
     bar.castShadow = true;
     this.scene.add(bar);
 
-    // Mesin Kopi Espresso
-    const espresso = new THREE.Mesh(
-      new THREE.BoxGeometry(1.8, 1.6, 1.4),
-      new THREE.MeshLambertMaterial({ color: 0x1e293b })
-    );
-    espresso.position.set(19, 3.6, -24.5);
-    this.scene.add(espresso);
+    // Mesin Kopi Espresso Otentik Claw3D
+    this.furniture.load('kitchenCoffeeMachine', (espresso) => {
+      this.furniture.fit(espresso, { targetHeight: 1.5 });
+      espresso.position.set(19, 2.8, -24.5);
+      espresso.rotation.y = 0;
+      this.scene.add(espresso);
+    });
 
-    // Kulkas Kantin
-    const fridge = new THREE.Mesh(
-      new THREE.BoxGeometry(2.8, 8.0, 2.8),
-      new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
-    );
-    fridge.position.set(33.5, 4.0, -24.5);
-    fridge.castShadow = true;
-    this.scene.add(fridge);
+    // Kulkas Kantin Stainless Steel Claw3D
+    this.furniture.load('kitchenFridgeSmall', (fridge) => {
+      this.furniture.fit(fridge, { targetHeight: 7.2 });
+      fridge.position.set(33.5, 0, -24.5);
+      fridge.rotation.y = 0;
+      this.scene.add(fridge);
+    });
 
-    // Meja Bundar Kantin
+    // Meja Bundar & Kursi Modern Kantin
     this.createDiningTable(17, -12);
     this.createDiningTable(27, -12);
     this.createWaterDispenser(34, -7);
@@ -322,26 +432,45 @@ export class VirtualOffice3D {
 
     this.createZoneSign(22, 10, 27.5, 'LOUNGE & GAMING AREA', 0x9333ea, true);
 
-    // Sofa L Besar Ungu
-    const sofaMat = new THREE.MeshLambertMaterial({ color: 0x9333ea });
-    const sofaMain = new THREE.Mesh(new THREE.BoxGeometry(11, 2.4, 3.4), sofaMat);
-    sofaMain.position.set(20, 1.2, 13);
-    sofaMain.castShadow = true;
-    this.scene.add(sofaMain);
+    // Sofa Mewah Claw3D
+    this.furniture.load('loungeSofa', (sofa) => {
+      this.furniture.fit(sofa, { targetHeight: 2.7 });
+      sofa.position.set(20, 0, 13);
+      sofa.rotation.y = Math.PI;
+      sofa.traverse(c => {
+        if (c.isMesh && c.material) {
+          c.material.color.lerp(new THREE.Color(0x9333ea), 0.7);
+        }
+      });
+      this.scene.add(sofa);
+    });
 
-    const sofaL = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.4, 7.5), sofaMat);
-    sofaL.position.set(26.5, 1.2, 16.5);
-    sofaL.castShadow = true;
-    this.scene.add(sofaL);
+    // Kursi Santai Lounge Armchair Claw3D
+    this.furniture.load('loungeDesignChair', (chair) => {
+      this.furniture.fit(chair, { targetHeight: 2.3 });
+      chair.position.set(26.5, 0, 16.5);
+      chair.rotation.y = -Math.PI / 2;
+      chair.traverse(c => {
+        if (c.isMesh && c.material) {
+          c.material.color.lerp(new THREE.Color(0xa855f7), 0.7);
+        }
+      });
+      this.scene.add(chair);
+    });
 
-    // Meja Kopi
-    const coffeeTable = new THREE.Mesh(
-      new THREE.BoxGeometry(6.5, 1.1, 3.2),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    coffeeTable.position.set(20, 0.55, 18);
-    coffeeTable.castShadow = true;
-    this.scene.add(coffeeTable);
+    // Meja Kopi Elegan Claw3D
+    this.furniture.load('tableCoffee', (coffeeTable) => {
+      this.furniture.fit(coffeeTable, { targetHeight: 1.1 });
+      coffeeTable.position.set(20, 0, 18);
+      this.scene.add(coffeeTable);
+    });
+
+    // Lampu Lantai Modern Claw3D
+    this.furniture.load('lampRoundFloor', (lamp) => {
+      this.furniture.fit(lamp, { targetHeight: 6.2 });
+      lamp.position.set(33, 0, 22);
+      this.scene.add(lamp);
+    });
 
     // Beanbags
     this.createBeanbag(13, 15, 0xf97316);
@@ -388,6 +517,13 @@ export class VirtualOffice3D {
     bannerLogo.position.set(-3, 1.3, 14.25);
     this.scene.add(bannerLogo);
 
+    this.furniture.load('chairModernCushion', (chair) => {
+      this.furniture.fit(chair, { targetHeight: 1.9 });
+      chair.position.set(-3, 0, 11.5);
+      chair.rotation.y = 0;
+      this.scene.add(chair);
+    });
+
     this.createPottedPlant(-10, 13);
     this.createPottedPlant(4, 13);
   }
@@ -404,39 +540,32 @@ export class VirtualOffice3D {
 
   createDiningTable(x, z) {
     const group = new THREE.Group();
-    const top = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.8, 2.8, 0.25, 16),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    top.position.y = 2.4;
-    top.castShadow = true;
-    group.add(top);
+    group.position.set(x, 0, z);
 
-    const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.2, 0.2, 2.4, 8),
-      new THREE.MeshLambertMaterial({ color: 0x475569 })
-    );
-    pole.position.y = 1.2;
-    group.add(pole);
-
-    [[-2.2, 0, 0xec4899], [2.2, 0, 0xfacc15], [0, -2.2, 0x10b981], [0, 2.2, 0x3b82f6]].forEach(([cx, cz, c]) => {
-      const chair = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.7, 0.7, 0.2, 12),
-        new THREE.MeshLambertMaterial({ color: c })
-      );
-      chair.position.set(cx, 1.5, cz);
-      chair.castShadow = true;
-      group.add(chair);
-
-      const leg = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.08, 0.08, 1.5, 8),
-        new THREE.MeshLambertMaterial({ color: 0x334155 })
-      );
-      leg.position.set(cx, 0.75, cz);
-      group.add(leg);
+    // Meja Bundar Claw3D
+    this.furniture.load('tableRound', (table) => {
+      this.furniture.fit(table, { targetHeight: 2.4 });
+      group.add(table);
     });
 
-    group.position.set(x, 0, z);
+    // Kursi Cafe Modern Cushion Claw3D
+    const chairColors = [0xec4899, 0xfacc15, 0x10b981, 0x3b82f6];
+    const chairDists = [[-2.2, 0, 0], [2.2, 0, Math.PI], [0, -2.2, -Math.PI / 2], [0, 2.2, Math.PI / 2]];
+
+    chairDists.forEach(([cx, cz, rotY], i) => {
+      this.furniture.load('chairModernCushion', (chair) => {
+        this.furniture.fit(chair, { targetHeight: 1.8 });
+        chair.position.set(cx, 0, cz);
+        chair.rotation.y = rotY;
+        chair.traverse(c => {
+          if (c.isMesh && c.material && c.name.toLowerCase().includes('cushion')) {
+            c.material.color.lerp(new THREE.Color(chairColors[i]), 0.8);
+          }
+        });
+        group.add(chair);
+      });
+    });
+
     this.scene.add(group);
   }
 
@@ -474,107 +603,90 @@ export class VirtualOffice3D {
 
   createPottedPlant(x, z) {
     const group = new THREE.Group();
-    const pot = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.9, 0.65, 1.6, 12),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    pot.position.y = 0.8;
-    pot.castShadow = true;
-    group.add(pot);
-
-    const leaves = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(1.4, 1),
-      new THREE.MeshLambertMaterial({ color: 0x15803d })
-    );
-    leaves.position.y = 2.2;
-    leaves.castShadow = true;
-    group.add(leaves);
-
     group.position.set(x, 0, z);
+
+    // Model Potted Plant Claw3D
+    this.furniture.load('pottedPlant', (plant) => {
+      this.furniture.fit(plant, { targetHeight: 2.8 });
+      group.add(plant);
+    });
+
     this.scene.add(group);
   }
 
-  createDeskStation({ x, z, chairColor = 0x38bdf8, isDev = false }) {
+  createDeskStation({ x, z, chairColor = 0x38bdf8, isDev = false, isLead = false }) {
     const deskGroup = new THREE.Group();
+    deskGroup.position.set(x, 0, z);
 
-    const top = new THREE.Mesh(
-      new THREE.BoxGeometry(4.6, 0.25, 2.6),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    top.position.y = 2.4;
-    top.castShadow = true;
-    top.receiveShadow = true;
-    deskGroup.add(top);
-
-    const legMat = new THREE.MeshLambertMaterial({ color: 0xd4a373 });
-    [[-2.1, -1.1], [2.1, -1.1], [-2.1, 1.1], [2.1, 1.1]].forEach(([lx, lz]) => {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 8), legMat);
-      leg.position.set(lx, 1.2, lz);
-      leg.castShadow = true;
-      deskGroup.add(leg);
+    // Meja Claw3D (deskCorner untuk Executive Lead, desk standar untuk staf)
+    const deskModel = isLead ? 'deskCorner' : 'desk';
+    this.furniture.load(deskModel, (deskInst) => {
+      this.furniture.fit(deskInst, { targetHeight: 2.35 });
+      deskInst.position.set(0, 0, -1.15);
+      deskInst.rotation.y = isLead ? -Math.PI / 2 : Math.PI;
+      deskGroup.add(deskInst);
     });
 
+    // Kursi Kerja Putar Ergonomis Claw3D (chairDesk)
+    this.furniture.load('chairDesk', (chairInst) => {
+      this.furniture.fit(chairInst, { targetHeight: 1.95 });
+      chairInst.position.set(0, 0, 0.2);
+      chairInst.rotation.y = 0;
+      chairInst.traverse(c => {
+        if (c.isMesh && c.material) {
+          c.material.color.lerp(new THREE.Color(chairColor), 0.7);
+        }
+      });
+      deskGroup.add(chairInst);
+    });
+
+    // Monitor Komputer Claw3D (computerScreen)
     let screens = [];
     if (isDev) {
       // DUAL MONITOR UNTUK PROGRAMMER!
-      [-0.9, 0.9].forEach((mx, i) => {
-        const stand = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.08, 0.08, 0.7, 8),
-          new THREE.MeshLambertMaterial({ color: 0x334155 })
-        );
-        stand.position.set(mx, 2.75, -0.7);
-        deskGroup.add(stand);
+      [-0.95, 0.95].forEach((mx, i) => {
+        this.furniture.load('computerScreen', (screenInst) => {
+          this.furniture.fit(screenInst, { targetHeight: 1.35 });
+          screenInst.position.set(mx, 2.35, -1.05);
+          screenInst.rotation.y = mx < 0 ? 0.16 : -0.16;
+          deskGroup.add(screenInst);
+        });
 
-        const screen = new THREE.Mesh(
-          new THREE.BoxGeometry(1.5, 1.0, 0.06),
-          new THREE.MeshBasicMaterial({ color: i === 0 ? 0x10b981 : 0x0284c7 })
+        // Glowing coding screen surface
+        const glow = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.2, 0.75),
+          new THREE.MeshBasicMaterial({
+            color: i === 0 ? 0x10b981 : 0x00f2fe,
+            side: THREE.DoubleSide
+          })
         );
-        screen.position.set(mx, 3.25, -0.7);
-        screen.rotation.y = mx < 0 ? 0.15 : -0.15;
-        deskGroup.add(screen);
-        screens.push(screen);
+        glow.position.set(mx, 3.12, -0.98);
+        glow.rotation.y = mx < 0 ? 0.16 : -0.16;
+        deskGroup.add(glow);
+        screens.push(glow);
+      });
+    } else {
+      // Single Screen untuk Akuntansi & Product
+      this.furniture.load('computerScreen', (screenInst) => {
+        this.furniture.fit(screenInst, { targetHeight: 1.35 });
+        screenInst.position.set(0, 2.35, -1.05);
+        screenInst.rotation.y = 0;
+        deskGroup.add(screenInst);
       });
 
-      const keyboard = new THREE.Mesh(
-        new THREE.BoxGeometry(1.4, 0.05, 0.5),
-        new THREE.MeshLambertMaterial({ color: 0x1e293b })
+      const glow = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.2, 0.75),
+        new THREE.MeshBasicMaterial({
+          color: 0x38bdf8,
+          side: THREE.DoubleSide
+        })
       );
-      keyboard.position.set(0, 2.55, 0.1);
-      deskGroup.add(keyboard);
-    } else {
-      // Laptop Kerja Akuntansi
-      const lapBase = new THREE.Mesh(
-        new THREE.BoxGeometry(1.3, 0.06, 0.95),
-        new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
-      );
-      lapBase.position.set(0, 2.56, -0.2);
-      deskGroup.add(lapBase);
-
-      const lapScreen = new THREE.Mesh(
-        new THREE.BoxGeometry(1.3, 0.9, 0.06),
-        new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-      );
-      lapScreen.position.set(0, 2.98, -0.68);
-      lapScreen.rotation.x = -0.15;
-      deskGroup.add(lapScreen);
-      screens.push(lapScreen);
+      glow.position.set(0, 3.12, -0.98);
+      deskGroup.add(glow);
+      screens.push(glow);
     }
 
-    // Kursi
-    const chairMat = new THREE.MeshLambertMaterial({ color: chairColor });
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 1.6), chairMat);
-    seat.position.set(0, 1.6, 1.3);
-    seat.castShadow = true;
-    deskGroup.add(seat);
-
-    const backRest = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 0.2), chairMat);
-    backRest.position.set(0, 2.45, 2.0);
-    backRest.castShadow = true;
-    deskGroup.add(backRest);
-
-    deskGroup.position.set(x, 0, z);
     this.scene.add(deskGroup);
-
     return { screens };
   }
 
@@ -709,7 +821,8 @@ export class VirtualOffice3D {
         x: emp.x,
         z: emp.z,
         chairColor: emp.chairColor || 0x38bdf8,
-        isDev: emp.isDev || false
+        isDev: emp.isDev || false,
+        isLead: emp.isLead || false
       });
     }
 

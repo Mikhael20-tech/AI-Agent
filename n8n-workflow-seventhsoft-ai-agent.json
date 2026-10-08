@@ -1,0 +1,181 @@
+{
+  "name": "Seventhsoft Accounting AI Agent - Enterprise Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e1f1a001-8b21-4f32-841d-9321f8a84711",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        380,
+        240
+      ],
+      "webhookId": "seventhsoft-chat-trigger"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Kamu adalah AI Agent Akuntansi & Keuangan Resmi Seventhsoft ERP.\n\nTugas Utamamu:\n1. Ekstraksi Faktur & Pembukuan: Ekstrak rincian faktur pembelian (No. Faktur, Tanggal, Vendor, Subtotal, PPN 11%, Grand Total, COA Debet/Kredit).\n2. Kepatuhan UU PDP No. 27/2022: Selalu masking NIK, NPWP (format 01.***.***.*-000), dan nomor rekening bank vendor.\n3. Four-Eyes Principle: DILARANG KERAS mem-posting transaksi langsung ke General Ledger tanpa otorisasi manusia. Seluruh draf baru berstatus PENDING_APPROVAL.\n4. Gunakan tool 'cek_draft_seventhsoft' jika user bertanya tentang status draf, invoice yang belum diapprove, atau daftar transaksi.\n5. Gunakan tool 'audit_rekonsiliasi_bank' jika user bertanya tentang mutasi bank, kas, atau selisih rekonsiliasi.\n\nGaya Komunikasi:\n- Sopan, profesional, akurat secara angka, format mata uang selalu Rupiah (Rp)."
+        }
+      },
+      "id": "e2f2b002-9c32-4e43-952e-0432f9b95822",
+      "name": "AI Agent Seventhsoft",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        600,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-flash-latest",
+        "options": {}
+      },
+      "id": "e3f3c003-ad43-4f54-a63f-1543f0ca6933",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        520,
+        460
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "default",
+          "name": "Google Gemini account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "id": "e4f4d004-be54-4a65-b74a-2654f1db7044",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "name": "cek_draft_seventhsoft",
+        "description": "Gunakan tool ini untuk mengecek daftar draf invoice pembelian Seventhsoft yang belum disetujui (PENDING_APPROVAL) maupun yang sudah disetujui (POSTED).",
+        "method": "GET",
+        "url": "https://ai-agent-sigma-lake.vercel.app/api/drafts"
+      },
+      "id": "e5f5e005-cf65-4b76-c85b-3765f2ec8155",
+      "name": "Tool: Cek Draft Seventhsoft",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "name": "audit_rekonsiliasi_bank",
+        "description": "Gunakan tool ini untuk mengecek audit rekonsiliasi antara mutasi rekening bank BCA/Mandiri vs buku kas Seventhsoft untuk menemukan selisih uang.",
+        "method": "GET",
+        "url": "https://ai-agent-sigma-lake.vercel.app/api/reconciliation"
+      },
+      "id": "e6f6f006-df76-4c87-d96c-4876f3fd9266",
+      "name": "Tool: Audit Rekonsiliasi Bank",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        920,
+        460
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e7f70007-ef87-4d98-ea7d-5987f4ae0377",
+      "name": "Calculator Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        460
+      ]
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent Seventhsoft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Seventhsoft",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent Seventhsoft",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Cek Draft Seventhsoft": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Seventhsoft",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Audit Rekonsiliasi Bank": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Seventhsoft",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Seventhsoft",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
