@@ -280,7 +280,85 @@ export class TelegramBotService {
     const lower = text.toLowerCase();
     const callerName = fromUser ? (fromUser.first_name || 'Pak') : 'Pak';
 
+    if (lower.includes('latte') || lower.includes('americano') || lower.includes('cappuccino') || lower.includes('espresso') || lower.includes('kopi') || lower.includes('koko') || lower.includes('barista') || lower.includes('teh')) {
+      this.lastActiveEmployee = 'cafe-koko';
+      let speech = `Kabar baik dan semangat ${callerName}! Kopi espresso hangat sudah siap di pantry. Mau saya buatkan americano atau latte hari ini?`;
+      if (lower.includes('latte')) {
+        speech = `Siap ${callerName}! Satu cangkir Caffe Latte hangat dengan susu lembut segera saya buatkan dan antar ke meja Bapak ya. Ditunggu sebentar!`;
+      } else if (lower.includes('americano')) {
+        speech = `Siap ${callerName}! Segelas Americano double-shot hangat siap diseduh biar makin fokus dan bertenaga kerja hari ini!`;
+      } else if (lower.includes('cappuccino')) {
+        speech = `Siap ${callerName}! Cappuccino dengan foam tebal dan taburan cokelat siap meluncur ke meja Bapak!`;
+      }
+      return {
+        empId: 'cafe-koko',
+        name: 'Koko',
+        role: 'Barista Pantry',
+        speech
+      };
+    }
+
+    if (lower.includes('langsung kasih') || lower.includes('bisa langsung') || lower.includes('minta data') || lower.includes('kirim data') || lower.includes('kirim laporannya')) {
+      this.lastActiveEmployee = 'staff-maya';
+      return {
+        empId: 'staff-maya',
+        name: 'Maya',
+        role: 'Senior Auditor',
+        speech: `Siap ${callerName}! File rekap temuan audit SHA-256 dan verifikasi mutasi jurnal minggu ini sedang saya persiapkan dan siap ditinjau di tab Audit Log Seventhsoft.`
+      };
+    }
+
+    if (lower.includes('lagi ngapain') || lower.includes('lagi apa') || lower.includes('sedang apa')) {
+      if (this.lastActiveEmployee === 'cafe-koko') {
+        return {
+          empId: 'cafe-koko',
+          name: 'Koko',
+          role: 'Barista Pantry',
+          speech: `Ini saya lagi steam susu untuk pesanan latte ${callerName} dan bersihkan portafilter mesin espresso pantry!`
+        };
+      }
+      if (this.lastActiveEmployee === 'staff-maya') {
+        return {
+          empId: 'staff-maya',
+          name: 'Maya',
+          role: 'Senior Auditor',
+          speech: `Sedang menyusun laporan audit mingguan dan mencocokkan checksum SHA-256 transaksi pembukuan, ${callerName}.`
+        };
+      }
+      if (this.lastActiveEmployee === 'lobby-bella') {
+        return {
+          empId: 'lobby-bella',
+          name: 'Bella',
+          role: 'Front Desk Receptionist',
+          speech: `Saya lagi mencatat buku tamu dan menyambut kunjungan klien Seventhsoft di lobby depan, ${callerName}!`
+        };
+      }
+      if (this.lastActiveEmployee === 'dev-yoga') {
+        return {
+          empId: 'dev-yoga',
+          name: 'Yoga',
+          role: 'IT Support & Infra',
+          speech: `Saya lagi cek kabel LAN di switch rack dan memastikan temperatur server tetap dingin 21°C, ${callerName}.`
+        };
+      }
+      if (this.lastActiveEmployee === 'staff-doni') {
+        return {
+          empId: 'staff-doni',
+          name: 'Doni',
+          role: 'Payroll Specialist',
+          speech: `Lagi hitung kalkulasi PPh 21 dan rekap slip gaji karyawan kantor, ${callerName}.`
+        };
+      }
+      return {
+        empId: 'biz-bagus',
+        name: 'Bagus',
+        role: 'Enterprise Sales Lead',
+        speech: `Ini saya lagi siapin proposal presentasi demo Seventhsoft untuk klien korporasi, ${callerName}. Bapak mau bicara dengan siapa lagi?`
+      };
+    }
+
     if (lower.includes('bagus')) {
+      this.lastActiveEmployee = 'biz-bagus';
       return {
         empId: 'biz-bagus',
         name: 'Bagus',
@@ -290,6 +368,7 @@ export class TelegramBotService {
     }
 
     if (lower.includes('doni') || lower.includes('payroll') || lower.includes('gaji')) {
+      this.lastActiveEmployee = 'staff-doni';
       return {
         empId: 'staff-doni',
         name: 'Doni',
@@ -299,6 +378,7 @@ export class TelegramBotService {
     }
 
     if (lower.includes('yoga') || lower.includes('infra') || lower.includes('jaringan')) {
+      this.lastActiveEmployee = 'dev-yoga';
       return {
         empId: 'dev-yoga',
         name: 'Yoga',
@@ -308,6 +388,7 @@ export class TelegramBotService {
     }
 
     if (lower.includes('kevin')) {
+      this.lastActiveEmployee = 'dev-kevin';
       return {
         empId: 'dev-kevin',
         name: 'Kevin',
@@ -317,6 +398,7 @@ export class TelegramBotService {
     }
 
     if (lower.includes('sarah')) {
+      this.lastActiveEmployee = 'dev-sarah';
       return {
         empId: 'dev-sarah',
         name: 'Sarah',
