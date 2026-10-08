@@ -929,6 +929,59 @@ export class VirtualOffice3D {
     }
   }
 
+  triggerEmployeeSpeech(empId, name, speech) {
+    const agent = this.agents[empId] || this.wanderingStaff.find(s => s.id === empId);
+    if (!agent) return;
+
+    // Gerakkan kamera mendekat ke pegawai yang sedang bicara
+    if (this.controls) {
+      let targetPos;
+      if (agent.mesh) {
+        targetPos = agent.mesh.position.clone();
+      } else if (agent.worldAnchor) {
+        targetPos = agent.worldAnchor.clone();
+      }
+      if (targetPos) {
+        this.controls.target.lerp(new THREE.Vector3(targetPos.x, 2.5, targetPos.z), 0.85);
+      }
+    }
+
+    // Buat Pop-up Balon Bicara Live di atas kepala
+    const bubble = document.createElement('div');
+    bubble.className = 'live-speech-popover';
+    bubble.innerHTML = `
+      <div class="speech-author">💬 ${name}</div>
+      <div class="speech-content">"${speech}"</div>
+    `;
+    this.overlayContainer.appendChild(bubble);
+
+    // Animasi bicara pada kepala
+    if (agent.headGroup) {
+      agent.isTalking = true;
+      setTimeout(() => { agent.isTalking = false; }, 6000);
+    }
+
+    const anchor = agent.worldAnchor || new THREE.Vector3(agent.mesh.position.x, 5.5, agent.mesh.position.z);
+    const updatePos = () => {
+      if (!this.container) return;
+      const widthHalf = this.container.clientWidth / 2;
+      const heightHalf = this.container.clientHeight / 2;
+      const curPos = agent.mesh ? agent.mesh.position.clone().setY(5.5) : anchor;
+      const screenPos = curPos.project(this.camera);
+      const px = (screenPos.x * widthHalf) + widthHalf;
+      const py = -(screenPos.y * heightHalf) + heightHalf;
+      bubble.style.transform = `translate(-50%, -100%) translate(${px}px, ${py - 12}px)`;
+    };
+    updatePos();
+    const posInterval = setInterval(updatePos, 30);
+
+    setTimeout(() => {
+      clearInterval(posInterval);
+      bubble.classList.add('fade-out');
+      setTimeout(() => bubble.remove(), 500);
+    }, 7000);
+  }
+
   onResize() {
     if (!this.container) return;
     const width = this.container.clientWidth;

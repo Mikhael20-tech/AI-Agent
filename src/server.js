@@ -81,6 +81,7 @@ function broadcast(eventType, data) {
 eventBus.on('avatar_state', (payload) => broadcast('AVATAR_STATE', payload));
 eventBus.on('telegram_message_sent', (payload) => broadcast('TELEGRAM_MESSAGE', payload));
 eventBus.on('draft_updated', (payload) => broadcast('DRAFT_UPDATED', payload));
+eventBus.on('employee_speech', (payload) => broadcast('EMPLOYEE_SPEECH', payload));
 
 // ============================================================================
 // REST API ROUTES

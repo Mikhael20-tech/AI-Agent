@@ -201,26 +201,62 @@ export class TelegramBotService {
               const cq = update.callback_query;
               const result = await this.handleCallbackAction(cq.data, cq.from);
 
-              // Jawab callback query Telegram agar spinner berhenti
+              let toastText = 'Aksi berhasil diproses';
+              if (result.success) {
+                toastText = result.action === 'APPROVED' ? '✅ Otorisasi Disetujui (Posting GL)!' : '❌ Draft Ditolak (Perlu Revisi)';
+              } else {
+                toastText = `⚠️ ${result.message || 'Draft sudah diproses sebelumnya'}`;
+              }
+
+              // Jawab callback query Telegram agar spinner berhenti & tampilkan pesan yang benar
               await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   callback_query_id: cq.id,
-                  text: result.action === 'APPROVED' ? 'Otorisasi Disetujui!' : 'Draft Ditolak'
+                  text: toastText
                 })
               });
 
-              // Kirim pesan status ke chat
-              await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: cq.message.chat.id,
-                  text: result.text,
-                  parse_mode: 'HTML'
-                })
-              });
+              // Kirim pesan status konfirmasi ke chat jika berhasil
+              if (result.success && result.text) {
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: cq.message.chat.id,
+                    text: result.text,
+                    parse_mode: 'HTML'
+                  })
+                });
+              }
+            }
+
+            // Handle pesan chat teks (Interaksi dialog dua arah dengan 30 pegawai)
+            if (update.message && update.message.text) {
+              const rawText = update.message.text.trim();
+              const chatId = update.message.chat.id;
+              const fromUser = update.message.from;
+
+              if (rawText === '/start') {
+                await this.sendCustomMessage(chatId, `🤖 <b>Halo Finance Lead (${fromUser.first_name || 'Bpk. Mikhael'})!</b>\n\nSelamat datang di Bot Resmi <b>AI Agent Akuntansi Seventhsoft</b>.\n\n✨ <b>Apa saja yang bisa Anda lakukan:</b>\n1. Menerima & mengotorisasi draf transaksi secara aman <i>(Four-Eyes Principle)</i>.\n2. Mengobrol langsung dengan 30 staf kantor! (Contoh: ketik <i>"Gimana kabarmu Bagus"</i>, <i>"Halo Kevin"</i>, <i>"Koko minta kopi"</i>, atau <i>"Budi antar berkas"</i>).`);
+                continue;
+              }
+
+              const reply = this.generateEmployeeResponse(rawText, fromUser);
+              if (reply) {
+                // Pancarkan event ke Virtual Office 3D via WebSocket
+                this.eventBus.emit('employee_speech', {
+                  empId: reply.empId,
+                  name: reply.name,
+                  role: reply.role,
+                  speech: reply.speech,
+                  fromUser: fromUser.first_name || 'Finance Lead'
+                });
+
+                // Kirim balasan Telegram
+                await this.sendCustomMessage(chatId, `💬 <b>${reply.name} (${reply.role}):</b>\n"${reply.speech}"`);
+              }
             }
           }
         }
@@ -234,6 +270,163 @@ export class TelegramBotService {
     };
 
     poll();
+  }
+
+  generateEmployeeResponse(text, fromUser) {
+    const lower = text.toLowerCase();
+    const callerName = fromUser ? (fromUser.first_name || 'Pak') : 'Pak';
+
+    if (lower.includes('bagus')) {
+      return {
+        empId: 'biz-bagus',
+        name: 'Bagus',
+        role: 'Enterprise Sales Lead',
+        speech: `Baik ${callerName}! Alhamdulillah lancar, ini saya lagi siapin proposal demo sistem Seventhsoft buat 3 klien korporasi baru. Bapak butuh bantuan laporan penjualan?`
+      };
+    }
+
+    if (lower.includes('kevin')) {
+      return {
+        empId: 'dev-kevin',
+        name: 'Kevin',
+        role: 'Lead Backend Engineer',
+        speech: `Aman dan sehat ${callerName}! REST API Seventhsoft berjalan lancar 99.9%, webhook n8n juga aktif stabil. Sedang memantau query transaksi General Ledger.`
+      };
+    }
+
+    if (lower.includes('sarah')) {
+      return {
+        empId: 'dev-sarah',
+        name: 'Sarah',
+        role: 'Frontend React Engineer',
+        speech: `Halo ${callerName}! Kabar baik, ini saya lagi optimasi dashboard Virtual Office 3D biar makin interaktif dan ringan di layar Bapak.`
+      };
+    }
+
+    if (lower.includes('budi') || lower.includes('kurir')) {
+      return {
+        empId: 'staff-budi-kurir',
+        name: 'Budi',
+        role: 'Kurir Berkas Akuntansi',
+        speech: `Siap ${callerName}, kabar baik! Ini saya baru selesai antar tumpukan map invoice dari meja Entry ke meja Finance Lead.`
+      };
+    }
+
+    if (lower.includes('koko') || lower.includes('kopi') || lower.includes('barista')) {
+      return {
+        empId: 'cafe-koko',
+        name: 'Koko',
+        role: 'Barista Pantry',
+        speech: `Kabar baik dan semangat ${callerName}! Kopi espresso hangat sudah siap di pantry. Mau saya buatkan americano atau latte hari ini?`
+      };
+    }
+
+    if (lower.includes('maya') || lower.includes('auditor') || lower.includes('audit')) {
+      return {
+        empId: 'staff-maya',
+        name: 'Maya',
+        role: 'Senior Auditor',
+        speech: `Kabar baik ${callerName}. Sedang mereview jejak audit SHA-256 dan kepatuhan UU ITE untuk pembukuan transaksi minggu ini.`
+      };
+    }
+
+    if (lower.includes('rian') || lower.includes('faktur')) {
+      return {
+        empId: 'staff-rian',
+        name: 'Rian',
+        role: 'Staf Pajak e-Faktur',
+        speech: `Baik ${callerName}! Sedang merekap e-Faktur PPN 11% dan bukti potong PPh 23 untuk draf laporan perpajakan.`
+      };
+    }
+
+    if (lower.includes('dimas')) {
+      return {
+        empId: 'staff-dimas',
+        name: 'Dimas',
+        role: 'Junior Accountant',
+        speech: `Kabar baik ${callerName}! Sedang mencocokkan fisik surat jalan vendor dengan draf pembelian di Seventhsoft.`
+      };
+    }
+
+    if (lower.includes('bella') || lower.includes('resepsionis') || lower.includes('lobby')) {
+      return {
+        empId: 'lobby-bella',
+        name: 'Bella',
+        role: 'Front Desk Receptionist',
+        speech: `Selamat beraktivitas ${callerName}! Di lobby depan saat ini aman dan kondusif, siap menyambut kunjungan tamu atau klien.`
+      };
+    }
+
+    if (lower.includes('gilang') || lower.includes('game') || lower.includes('santai')) {
+      return {
+        empId: 'lounge-gilang',
+        name: 'Gilang',
+        role: 'Staff Lounge',
+        speech: `Haha baik dan santai ${callerName}! Lagi istirahat sejenak di sofa lounge sambil refresh otak setelah audit tadi.`
+      };
+    }
+
+    if (lower.includes('bu ani') || lower.includes('ani') || lower.includes('makan') || lower.includes('snack')) {
+      return {
+        empId: 'cafe-buan',
+        name: 'Bu Ani',
+        role: 'Chef Kantin',
+        speech: `Kabar baik ${callerName}! Snack sehat dan kue sore hangat sudah siap di kantin, monggo mampir ${callerName}!`
+      };
+    }
+
+    if (lower.includes('entry') || lower.includes('ocr') || lower.includes('invoice')) {
+      return {
+        empId: 'agent-entry',
+        name: 'AI-Agent 01',
+        role: 'Data Entry & OCR',
+        speech: `Modul ekstraksi invoice aktif. Perlindungan data pribadi NIK & NPWP (UU PDP) siap diterapkan pada setiap faktur masuk.`
+      };
+    }
+
+    if (lower.includes('rekon') || lower.includes('bank')) {
+      return {
+        empId: 'agent-rekon',
+        name: 'AI-Agent 02',
+        role: 'Reconciliation Agent',
+        speech: `Status audit normal. Tidak ditemukan selisih nominal mencurigakan antara rekening koran BCA dan buku kas Seventhsoft.`
+      };
+    }
+
+    if (lower.includes('pajak') || lower.includes('ppn') || lower.includes('margin')) {
+      return {
+        empId: 'agent-pajak',
+        name: 'AI-Agent 03',
+        role: 'Tax & Reporting Analyst',
+        speech: `Perhitungan proyeksi PPN Keluaran vs Masukan terverifikasi seimbang. Margin laba kotor dalam batas aman.`
+      };
+    }
+
+    // Default ramah jika menyapa umum
+    return {
+      empId: 'biz-bagus',
+      name: 'Bagus',
+      role: 'Enterprise Sales',
+      speech: `Baik ${callerName}! Seluruh 30 staf di Kantor AI Seventhsoft dalam keadaan aktif dan siap membantu. Bapak mau bicara dengan divisi Akuntansi atau Programmer?`
+    };
+  }
+
+  async sendCustomMessage(chatId, htmlText) {
+    const { token } = this.getCredentials();
+    if (!token || !chatId) return;
+    try {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: htmlText,
+          parse_mode: 'HTML'
+        })
+      });
+    } catch (e) {
+      console.error('Gagal kirim custom message ke Telegram:', e.message);
+    }
   }
 
   stopPolling() {

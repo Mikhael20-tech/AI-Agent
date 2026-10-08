@@ -95,6 +95,12 @@ function handleMessage(msg) {
     case 'TELEGRAM_MESSAGE':
       appendTelegramMockMessage(msg.data);
       break;
+
+    case 'EMPLOYEE_SPEECH':
+      if (office3D) {
+        office3D.triggerEmployeeSpeech(msg.data.empId, msg.data.name, msg.data.speech);
+      }
+      break;
   }
 }
 
