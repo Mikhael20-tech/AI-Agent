@@ -1,0 +1,11 @@
+FAKTUR PEMBELIAN LOGISTIK
+No: INV/2026/X/1089
+Vendor: PT Lintas Samudera Express
+NPWP: 01.442.889.3-055.000
+No Rekening: BCA 88201948291
+Tanggal: 2026-10-07
+Uraian Transaksi:
+1. Jasa Ekspedisi Kargo Alat Berat (Qty: 1 @ Rp 18.000.000)
+Subtotal: Rp 18.000.000
+PPN 11%: Rp 1.980.000
+Grand Total: Rp 19.980.000

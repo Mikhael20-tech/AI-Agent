@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seventhsoft AI - Kantor AI Virtual Akuntansi</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js & OrbitControls CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- ====================================================================== -->
+  <!-- 3D VIRTUAL OFFICE FRAME (PERSIS SEPERTI FOTO HERMES AI AGENT)           -->
+  <!-- ====================================================================== -->
+  <div class="hermes-office-frame">
+
+    <!-- 1. FLOATING HEADER METRICS (ITEM 1 DI FOTO) -->
+    <div class="hermes-top-card">
+      <div class="hermes-brand-badge">
+        <div class="hermes-brand-title">Seventhsoft<span>AI</span></div>
+        <div class="hermes-brand-sub">Kantor AI Akuntansi</div>
+      </div>
+
+      <div class="hermes-metric-item">
+        <span class="hermes-metric-label">Karyawan kerja</span>
+        <span class="hermes-metric-val" id="metric-karyawan">4/8</span>
+      </div>
+
+      <div class="hermes-metric-item">
+        <span class="hermes-metric-label">Obrolan aktif</span>
+        <span class="hermes-metric-val" id="metric-obrolan">4</span>
+      </div>
+
+      <div class="hermes-metric-item">
+        <span class="hermes-metric-label">Telegram nyala</span>
+        <span class="hermes-metric-val" id="metric-telegram">1/1</span>
+      </div>
+
+      <div class="hermes-metric-item">
+        <span class="hermes-metric-label">Jadwal</span>
+        <span class="hermes-metric-val" id="metric-jadwal">3</span>
+      </div>
+    </div>
+
+    <!-- 3D THREE.JS CANVAS CONTAINER -->
+    <div id="office-canvas-container"></div>
+
+    <!-- 2, 3, 4. HTML OVERLAY LAYER UNTUK SPEECH BUBBLES DI ATAS KEPALA AGEN -->
+    <div id="office-overlay-layer"></div>
+
+    <!-- 5. FOOTER STATUS SINKRONISASI (ITEM 5 DI FOTO) -->
+    <div class="hermes-bottom-card">
+      <span class="live-green-dot"></span>
+      <span>Data asli Seventhsoft & Telegram • diperbarui <strong id="live-sync-time">16.12.00</strong></span>
+    </div>
+
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- KONTROL OPERASIONAL & KONSOL KERJA                                     -->
+  <!-- ====================================================================== -->
+  <section class="operations-container">
+
+    <div class="section-title-bar">
+      <div class="section-heading">
+        <span>⚡ Kontrol Operasional Akuntansi & Kepatuhan Hukum</span>
+      </div>
+
+      <div class="quick-action-bar">
+        <button class="btn-trigger" onclick="window.triggerSampleInvoice()">
+          <span>📄 Uji Ekstraksi Invoice (Agent 1)</span>
+        </button>
+        <button class="btn-trigger" style="background:linear-gradient(135deg, #0284c7, #38bdf8);" onclick="window.triggerAgent2Audit()">
+          <span>🏦 Uji Rekonsiliasi Bank (Agent 2)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB NAVIGATION -->
+    <div class="tab-nav-pills">
+      <button class="nav-pill-btn active" data-tab="pane-drafts">
+        📋 Antrean Draf Seventhsoft (Four-Eyes)
+      </button>
+      <button class="nav-pill-btn" data-tab="pane-telegram">
+        📱 Smartphone Telegram Lead (Approval)
+      </button>
+      <button class="nav-pill-btn" data-tab="pane-reconcile">
+        🏦 Mutasi Bank & Rekonsiliasi Kas
+      </button>
+      <button class="nav-pill-btn" data-tab="pane-tax">
+        📊 Pajak PPN/PPh & Anomali HPP
+      </button>
+      <button class="nav-pill-btn" data-tab="pane-audit">
+        🛡️ Jejak Audit UU ITE (SHA-256)
+      </button>
+      <button class="nav-pill-btn" data-tab="pane-config">
+        ⚙️ Token Bot Telegram
+      </button>
+    </div>
+
+    <!-- PANE 1: DRAFTS QUEUE -->
+    <div class="tab-content-pane active" id="pane-drafts">
+      <div class="glass-card">
+        <h3 style="font-size:1.05rem;color:#fff;margin-bottom:0.35rem;">Antrean Transaksi Menunggu Otorisasi</h3>
+        <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1.25rem;">
+          Prinsip <strong>Four-Eyes Principle</strong>: Draf dibuat oleh <code>agen-entry</code> dan wajib disetujui manual oleh Finance Lead sebelum masuk ke General Ledger Seventhsoft.
+        </p>
+
+        <div class="table-wrap">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>No. Faktur</th>
+                <th>Tanggal</th>
+                <th>Vendor & NPWP (Masked)</th>
+                <th>Total Transaksi</th>
+                <th>Alokasi Akun (COA)</th>
+                <th>Status</th>
+                <th>Aksi Otorisasi</th>
+              </tr>
+            </thead>
+            <tbody id="drafts-tbody">
+              <!-- Render via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE 2: TELEGRAM SMARTPHONE SIMULATOR -->
+    <div class="tab-content-pane" id="pane-telegram">
+      <div class="glass-card">
+        <div class="tg-dual-col">
+          <div class="phone-shell">
+            <div class="notch-bar"></div>
+            <div style="display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:12px;">
+              <div style="width:34px;height:34px;border-radius:50%;background:#0284c7;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🤖</div>
+              <div>
+                <div style="font-weight:700;font-size:0.85rem;color:#fff;">Seventhsoft Bot</div>
+                <div style="font-size:0.7rem;color:#38bdf8;">bot • online</div>
+              </div>
+            </div>
+
+            <div class="chat-bubble-stream" id="tg-chat-area">
+              <div class="msg-bubble">
+                <b>👋 Selamat Datang di Bot Otorisasi Akuntansi</b><br>
+                Draf yang dibuat agen AI akan terkirim ke sini dengan tombol inline keyboard persetujuan resmi.
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div class="glass-card" style="margin-bottom:0;background:rgba(255,255,255,0.02);">
+              <h4 style="color:#38bdf8;font-size:0.95rem;margin-bottom:0.4rem;">📱 Notifikasi Real-Time di Smartphone Lead</h4>
+              <p style="font-size:0.82rem;color:#cbd5e1;line-height:1.6;">
+                Saat <code>agen-entry</code> memindai dokumen, bot langsung memformat ringkasan invoice dengan nomor NPWP dan rekening yang disanitasi (*UU PDP*). Finance Lead cukup menekan tombol <strong>[Setujui]</strong> atau <strong>[Tolak]</strong> di aplikasi Telegram tanpa perlu membuka laptop.
+              </p>
+            </div>
+
+            <div class="glass-card" style="margin-bottom:0;background:rgba(255,255,255,0.02);">
+              <h4 style="color:#f59e0b;font-size:0.95rem;margin-bottom:0.4rem;">🔒 Pembatasan Kas Keluar</h4>
+              <p style="font-size:0.82rem;color:#cbd5e1;line-height:1.6;">
+                Sesuai SOP, AI Agent dilarang mengeksekusi kas keluar atau bilyet giro secara otomatis. Semua pembayaran fisik tetap melalui perbankan konvensional dengan otorisasi manusia.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE 3: RECONCILIATION -->
+    <div class="tab-content-pane" id="pane-reconcile">
+      <div class="glass-card">
+        <h3 style="font-size:1.05rem;color:#fff;margin-bottom:0.35rem;">Pencocokan Mutasi Rekening Bank vs Buku Kas</h3>
+        <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1.25rem;">
+          <code>agen-rekonsiliasi</code> beroperasi secara <strong>Read-Only</strong> untuk mendeteksi selisih nominal atau transaksi perbankan yang belum dibukukan.
+        </p>
+
+        <div class="table-wrap">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>Ref Bank</th>
+                <th>Keterangan Mutasi</th>
+                <th>Nominal Bank</th>
+                <th>Buku Kas Seventhsoft</th>
+                <th>Selisih</th>
+                <th>Status</th>
+                <th>Temuan Agen</th>
+              </tr>
+            </thead>
+            <tbody id="rec-tbody">
+              <!-- Render via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE 4: TAX REPORT -->
+    <div class="tab-content-pane" id="pane-tax">
+      <div class="glass-card">
+        <h3 style="font-size:1.05rem;color:#fff;margin-bottom:0.35rem;">Proyeksi Fiskal PPN & Estimasi PPh (Agent 3)</h3>
+        <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1.25rem;">
+          <code>agen-pajak</code> melakukan kalkulasi internal tanpa kewenangan integrasi langsung ke sistem DJP.
+        </p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
+          <div style="background:rgba(255,255,255,0.03);padding:1rem;border-radius:12px;border:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:0.75rem;color:#94a3b8;">PPN Keluaran</div>
+            <div style="font-size:1.25rem;font-weight:700;color:#fff;margin-top:4px;" id="tax-ppn-keluaran">Rp 45.800.000</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:1rem;border-radius:12px;border:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:0.75rem;color:#94a3b8;">PPN Masukan</div>
+            <div style="font-size:1.25rem;font-weight:700;color:#fff;margin-top:4px;" id="tax-ppn-masukan">Rp 28.450.000</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:1rem;border-radius:12px;border:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:0.75rem;color:#94a3b8;">PPN Kurang Bayar</div>
+            <div style="font-size:1.25rem;font-weight:700;color:#f59e0b;margin-top:4px;" id="tax-ppn-kurang">Rp 17.350.000</div>
+          </div>
+        </div>
+
+        <h4 style="font-size:0.9rem;color:#fff;margin-bottom:0.5rem;">⚠️ Peringatan Lonjakan HPP Abnormal:</h4>
+        <div class="table-wrap">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>Kode Barang</th>
+                <th>Nama Barang</th>
+                <th>HPP Rata-Rata</th>
+                <th>HPP Terakhir</th>
+                <th>Persentase Kenaikan</th>
+                <th>Analisis Agent 3</th>
+              </tr>
+            </thead>
+            <tbody id="hpp-tbody">
+              <!-- Render via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE 5: AUDIT LOG -->
+    <div class="tab-content-pane" id="pane-audit">
+      <div class="glass-card">
+        <h3 style="font-size:1.05rem;color:#fff;margin-bottom:0.35rem;">Jejak Audit Hukum Digital (UU ITE & UU KUP)</h3>
+        <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1.25rem;">
+          Setiap aktivitas AI dan manusia terekam permanen dengan tanda tangan <strong>SHA-256 Checksum</strong>. Fitur <em>Hard Delete</em> dinonaktifkan sesuai UU KUP.
+        </p>
+
+        <div class="table-wrap">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>ID Log</th>
+                <th>Waktu</th>
+                <th>Event</th>
+                <th>Target ID</th>
+                <th>Aktor</th>
+                <th>Deskripsi Kepatuhan</th>
+                <th>SHA-256 Checksum</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <!-- Render via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE 6: TELEGRAM CONFIG -->
+    <div class="tab-content-pane" id="pane-config">
+      <div class="glass-card" style="max-width:650px;">
+        <h3 style="font-size:1.05rem;color:#fff;margin-bottom:0.35rem;">Konfigurasi Telegram Bot</h3>
+        <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1.25rem;">
+          Hubungkan bot Telegram riil milik perusahaan untuk menerima notifikasi langsung ke smartphone.
+        </p>
+
+        <form id="settings-form">
+          <div style="margin-bottom:1rem;">
+            <label style="display:block;font-size:0.8rem;color:#94a3b8;margin-bottom:4px;">Telegram Bot Token:</label>
+            <input type="text" id="cfg-bot-token" style="width:100%;padding:0.65rem 0.9rem;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;" placeholder="123456789:ABCdefGHI...">
+          </div>
+
+          <div style="margin-bottom:1rem;">
+            <label style="display:block;font-size:0.8rem;color:#94a3b8;margin-bottom:4px;">Telegram Chat ID:</label>
+            <input type="text" id="cfg-chat-id" style="width:100%;padding:0.65rem 0.9rem;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;" placeholder="Contoh: 987654321">
+          </div>
+
+          <div style="margin-bottom:1.5rem;">
+            <label style="display:block;font-size:0.8rem;color:#94a3b8;margin-bottom:4px;">Penanggung Jawab (Approver):</label>
+            <input type="text" id="cfg-approver-name" style="width:100%;padding:0.65rem 0.9rem;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;" value="Bpk. Hendra Wijaya, S.Ak., CA (Finance Lead)">
+          </div>
+
+          <button type="submit" class="btn-trigger" style="border:none;">
+            💾 Simpan Pengaturan
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </section>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

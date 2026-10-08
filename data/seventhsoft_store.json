@@ -1,0 +1,499 @@
+{
+  "settings": {
+    "telegram_bot_token": "8991162786:AAFogwxqAe3xqFMM8mZgJN31kjqe2EHMsaM",
+    "telegram_chat_id": "7987566473",
+    "finance_lead_name": "Mikhael (@myeap29 - Finance Lead)",
+    "approver_user_id": "USR-FIN-001",
+    "seventhsoft_branch": "CAB-JAKARTA-PUSAT",
+    "auto_notify_telegram": true
+  },
+  "drafts": [
+    {
+      "id": "DFT-202610-001",
+      "invoice_number": "INV/2026/X/0891",
+      "date": "2026-10-06",
+      "vendor_name": "PT Mitra Sukses Logistik",
+      "vendor_masked_npwp": "01.***.***.*-054.000",
+      "vendor_masked_rek": "BCA ****5678",
+      "type": "PEMBELIAN",
+      "items": [
+        {
+          "item_code": "BRG-LOG-01",
+          "name": "Jasa Angkut Kontainer 40ft",
+          "qty": 2,
+          "price": 3500000,
+          "total": 7000000
+        }
+      ],
+      "subtotal": 7000000,
+      "ppn": 770000,
+      "grand_total": 7770000,
+      "coa_debet": "5-1100 (Beban Pengangkutan)",
+      "coa_kredit": "2-1100 (Hutang Usaha)",
+      "status": "POSTED",
+      "creator_agent_id": "AI-AGENT-01 (Data Entry Modul Beli)",
+      "approver_user_id": "USR-FIN-001 (Finance Lead)",
+      "approval_notes": "Faktur & Berita Acara pengiriman valid.",
+      "created_at": "2026-10-06T09:30:00.000Z",
+      "posted_at": "2026-10-06T10:15:20.000Z",
+      "is_deleted": false,
+      "hash_signature": "7a9e5b92df3e2b..."
+    },
+    {
+      "id": "DFT-202610-002",
+      "invoice_number": "INV/2026/X/0904",
+      "date": "2026-10-07",
+      "vendor_name": "CV Sentosa Office Supply",
+      "vendor_masked_npwp": "02.***.***.*-011.000",
+      "vendor_masked_rek": "Mandiri ****9012",
+      "type": "PEMBELIAN",
+      "items": [
+        {
+          "item_code": "ATK-KRT-A4",
+          "name": "Kertas PaperOne A4 80gr (Rim)",
+          "qty": 20,
+          "price": 55000,
+          "total": 1100000
+        },
+        {
+          "item_code": "ATK-TNR-01",
+          "name": "Toner Cartridge LaserJet Black",
+          "qty": 2,
+          "price": 850000,
+          "total": 1700000
+        }
+      ],
+      "subtotal": 2800000,
+      "ppn": 308000,
+      "grand_total": 3108000,
+      "coa_debet": "5-1200 (Beban Perlengkapan Kantor)",
+      "coa_kredit": "2-1100 (Hutang Usaha)",
+      "status": "POSTED",
+      "creator_agent_id": "AI-AGENT-01 (Data Entry Modul Beli)",
+      "approver_user_id": "Bpk. Hendra Wijaya, S.Ak., CA (Finance Lead) (@finance_lead_web)",
+      "approval_notes": "Disetujui dan diotorisasi via Telegram Bot Inline Button",
+      "created_at": "2026-10-07T14:20:00.000Z",
+      "posted_at": "2026-10-07T09:08:45.338Z",
+      "is_deleted": false,
+      "hash_signature": "Pending verification",
+      "updated_at": "2026-10-07T09:08:45.338Z"
+    },
+    {
+      "id": "DFT-202610-003",
+      "invoice_number": "INVOICE",
+      "date": "2026-10-07",
+      "vendor_name": "PT Mandiri Global Tech\nNPWP",
+      "vendor_masked_npwp": "01.***.***.*-102.000",
+      "vendor_masked_rek": "BCA ****7712",
+      "type": "PEMBELIAN",
+      "items": [
+        {
+          "item_code": "BRG-SPL-01",
+          "name": "Paket Pengadaan Komponen Server",
+          "qty": 1,
+          "price": 12500000,
+          "total": 12500000
+        },
+        {
+          "item_code": "SRV-INST-02",
+          "name": "Jasa Konfigurasi & Kalibrasi",
+          "qty": 1,
+          "price": 2500000,
+          "total": 2500000
+        }
+      ],
+      "subtotal": 15000000,
+      "ppn": 1650000,
+      "grand_total": 16650000,
+      "coa_debet": "5-1200 (Beban Perlengkapan/Persediaan)",
+      "coa_kredit": "2-1100 (Hutang Usaha)",
+      "status": "POSTED",
+      "creator_agent_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "approver_user_id": "Hendra Wijaya, CA (@finance_lead_sim)",
+      "approval_notes": "Disetujui dan diotorisasi via Telegram Bot Inline Button",
+      "created_at": "2026-10-07T09:06:20.927Z",
+      "posted_at": "2026-10-07T09:06:32.190Z",
+      "is_deleted": false,
+      "hash_signature": "1d4b453a7e82b93f7cf62d2156cc546d3e10344c4b2c4ee4a0ab3cd99aa656b8",
+      "updated_at": "2026-10-07T09:06:32.190Z"
+    },
+    {
+      "id": "DFT-202610-004",
+      "invoice_number": "INV/2026/X/2267",
+      "date": "2026-10-07",
+      "vendor_name": "PT Buana Logistik Kargo\nNPWP",
+      "vendor_masked_npwp": "01.***.***.*-102.000",
+      "vendor_masked_rek": "BCA ****7712",
+      "type": "PEMBELIAN",
+      "items": [
+        {
+          "item_code": "BRG-SPL-01",
+          "name": "Paket Pengadaan Komponen Server",
+          "qty": 1,
+          "price": 12500000,
+          "total": 12500000
+        },
+        {
+          "item_code": "SRV-INST-02",
+          "name": "Jasa Konfigurasi & Kalibrasi",
+          "qty": 1,
+          "price": 2500000,
+          "total": 2500000
+        }
+      ],
+      "subtotal": 15000000,
+      "ppn": 1650000,
+      "grand_total": 16650000,
+      "coa_debet": "5-1200 (Beban Perlengkapan/Persediaan)",
+      "coa_kredit": "2-1100 (Hutang Usaha)",
+      "status": "POSTED",
+      "creator_agent_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "approver_user_id": "Bpk. Hendra Wijaya, S.Ak., CA (Finance Lead) (@finance_lead_web)",
+      "approval_notes": "Disetujui dan diotorisasi via Telegram Bot Inline Button",
+      "created_at": "2026-10-07T09:15:09.037Z",
+      "posted_at": "2026-10-07T09:15:12.177Z",
+      "is_deleted": false,
+      "hash_signature": "53f85a4a875a2c0ddd518d1755d6155e3db9478e46fef6ca9cff1a7ce0cdcc5c",
+      "updated_at": "2026-10-07T09:15:12.177Z"
+    },
+    {
+      "id": "DFT-202610-005",
+      "invoice_number": "INV/2026/X/6765",
+      "date": "2026-10-07",
+      "vendor_name": "PT Buana Logistik Kargo\nNPWP",
+      "vendor_masked_npwp": "01.***.***.*-102.000",
+      "vendor_masked_rek": "BCA ****7712",
+      "type": "PEMBELIAN",
+      "items": [
+        {
+          "item_code": "BRG-SPL-01",
+          "name": "Paket Pengadaan Komponen Server",
+          "qty": 1,
+          "price": 12500000,
+          "total": 12500000
+        },
+        {
+          "item_code": "SRV-INST-02",
+          "name": "Jasa Konfigurasi & Kalibrasi",
+          "qty": 1,
+          "price": 2500000,
+          "total": 2500000
+        }
+      ],
+      "subtotal": 15000000,
+      "ppn": 1650000,
+      "grand_total": 16650000,
+      "coa_debet": "5-1200 (Beban Perlengkapan/Persediaan)",
+      "coa_kredit": "2-1100 (Hutang Usaha)",
+      "status": "PENDING_APPROVAL",
+      "creator_agent_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "approver_user_id": null,
+      "approval_notes": null,
+      "created_at": "2026-10-07T09:35:25.801Z",
+      "posted_at": null,
+      "is_deleted": false,
+      "hash_signature": "45da178727f4fc7cdf48137b59dba3aac968a27b5983edd1601829abfba8196f"
+    },
+    {
+      "id": "DFT-202610-006",
+      "invoice_number": "INV/2026/X/3791",
+      "date": "2026-10-07",
+      "vendor_name": "PT Buana Logistik Kargo\nNPWP",
+      "vendor_masked_npwp": "01.***.***.*-102.000",
+      "vendor_masked_rek": "BCA ****7712",
+      "type": "PEMBELIAN",
+      "items": [
+        {
+          "item_code": "BRG-SPL-01",
+          "name": "Paket Pengadaan Komponen Server",
+          "qty": 1,
+          "price": 12500000,
+          "total": 12500000
+        },
+        {
+          "item_code": "SRV-INST-02",
+          "name": "Jasa Konfigurasi & Kalibrasi",
+          "qty": 1,
+          "price": 2500000,
+          "total": 2500000
+        }
+      ],
+      "subtotal": 15000000,
+      "ppn": 1650000,
+      "grand_total": 16650000,
+      "coa_debet": "5-1200 (Beban Perlengkapan/Persediaan)",
+      "coa_kredit": "2-1100 (Hutang Usaha)",
+      "status": "PENDING_APPROVAL",
+      "creator_agent_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "approver_user_id": null,
+      "approval_notes": null,
+      "created_at": "2026-10-07T09:35:27.299Z",
+      "posted_at": null,
+      "is_deleted": false,
+      "hash_signature": "ed2ba14e2caec8b09597791bbbd73c203d07b6fc7c97f88c6452a3fe2c64b8f8"
+    },
+    {
+      "id": "DFT-202610-007",
+      "invoice_number": "INV/2026/X/9209",
+      "date": "2026-10-07",
+      "vendor_name": "PT Buana Logistik Kargo\nNPWP",
+      "vendor_masked_npwp": "01.***.***.*-102.000",
+      "vendor_masked_rek": "BCA ****7712",
+      "type": "PEMBELIAN",
+      "items": [
+        {
+          "item_code": "BRG-SPL-01",
+          "name": "Paket Pengadaan Komponen Server",
+          "qty": 1,
+          "price": 12500000,
+          "total": 12500000
+        },
+        {
+          "item_code": "SRV-INST-02",
+          "name": "Jasa Konfigurasi & Kalibrasi",
+          "qty": 1,
+          "price": 2500000,
+          "total": 2500000
+        }
+      ],
+      "subtotal": 15000000,
+      "ppn": 1650000,
+      "grand_total": 16650000,
+      "coa_debet": "5-1200 (Beban Perlengkapan/Persediaan)",
+      "coa_kredit": "2-1100 (Hutang Usaha)",
+      "status": "PENDING_APPROVAL",
+      "creator_agent_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "approver_user_id": null,
+      "approval_notes": null,
+      "created_at": "2026-10-07T09:35:28.441Z",
+      "posted_at": null,
+      "is_deleted": false,
+      "hash_signature": "d9e2c3a7d41cbafb20f2f83641456a8d430663a24839994551972d85e44173ef"
+    },
+    {
+      "id": "DFT-202610-008",
+      "invoice_number": "INV/2026/X/7788",
+      "date": "2026-10-07",
+      "vendor_name": "PT Sinergi Mitra Logistik\nNPWP",
+      "vendor_masked_npwp": "01.***.***.*-102.000",
+      "vendor_masked_rek": "BCA ****7712",
+      "type": "PEMBELIAN",
+      "items": [
+        {
+          "item_code": "BRG-SPL-01",
+          "name": "Paket Pengadaan Komponen Server",
+          "qty": 1,
+          "price": 12500000,
+          "total": 12500000
+        },
+        {
+          "item_code": "SRV-INST-02",
+          "name": "Jasa Konfigurasi & Kalibrasi",
+          "qty": 1,
+          "price": 2500000,
+          "total": 2500000
+        }
+      ],
+      "subtotal": 15000000,
+      "ppn": 1650000,
+      "grand_total": 16650000,
+      "coa_debet": "5-1200 (Beban Perlengkapan/Persediaan)",
+      "coa_kredit": "2-1100 (Hutang Usaha)",
+      "status": "PENDING_APPROVAL",
+      "creator_agent_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "approver_user_id": null,
+      "approval_notes": null,
+      "created_at": "2026-10-07T09:43:53.855Z",
+      "posted_at": null,
+      "is_deleted": false,
+      "hash_signature": "3050e0cbb46c4c7892217546da516a6e706724ae0f57091d2cabe0f606830e25"
+    }
+  ],
+  "reconciliation": [
+    {
+      "id": "REC-001",
+      "date": "2026-10-06",
+      "bank_ref": "E-STMT-MDR-88912",
+      "description": "Transfer Masuk Penjualan Grosir PT ABC",
+      "bank_amount": 15540000,
+      "seventhsoft_gl_amount": 15540000,
+      "gl_voucher": "BKM-202610-044",
+      "difference": 0,
+      "status": "MATCHED",
+      "agent_flag": "Normal"
+    },
+    {
+      "id": "REC-002",
+      "date": "2026-10-07",
+      "bank_ref": "E-STMT-BCA-10293",
+      "description": "Biaya Administrasi Bank Bulanan",
+      "bank_amount": -25000,
+      "seventhsoft_gl_amount": 0,
+      "gl_voucher": "BELUM_TERCATAT",
+      "difference": -25000,
+      "status": "UNMATCHED",
+      "agent_flag": "Perlu Input Voucher Biaya Bank"
+    },
+    {
+      "id": "REC-003",
+      "date": "2026-10-07",
+      "bank_ref": "E-STMT-BCA-10294",
+      "description": "Pelunasan Pelanggan Toko Maju Jaya",
+      "bank_amount": 8880000,
+      "seventhsoft_gl_amount": 8800000,
+      "gl_voucher": "BKM-202610-048",
+      "difference": 80000,
+      "status": "DISCREPANCY",
+      "agent_flag": "Selisih Rp 80.000 (Potensi Diskon/Biaya Transfer)"
+    }
+  ],
+  "tax_summary": {
+    "period": "Oktober 2026",
+    "ppn_keluaran": 45800000,
+    "ppn_masukan": 28450000,
+    "ppn_kurang_bayar": 17350000,
+    "pph_21_estimasi": 6200000,
+    "pph_23_estimasi": 1450000,
+    "hpp_anomalies": [
+      {
+        "item_code": "BRG-ELK-12",
+        "item_name": "Smart Display Unit 24\"",
+        "avg_hpp": 2100000,
+        "recent_hpp": 2950000,
+        "pct_increase": "+40.4%",
+        "reason": "Lonjakan harga beli vendor > 20% tanpa notifikasi kenaikan bahan baku"
+      }
+    ]
+  },
+  "audit_logs": [
+    {
+      "id": "AUD-LOG-0001",
+      "timestamp": "2026-10-06T09:30:05.000Z",
+      "event": "DRAFT_CREATED",
+      "target_id": "DFT-202610-001",
+      "actor_type": "AI_AGENT",
+      "actor_id": "AI-AGENT-01",
+      "description": "Ekstraksi invoice INV/2026/X/0891 selesai. Data pribadi NIK/NPWP di-masking sesuai UU No. 27/2022. Draft dibuat.",
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "AUD-LOG-0002",
+      "timestamp": "2026-10-06T10:15:20.000Z",
+      "event": "GL_POSTED",
+      "target_id": "DFT-202610-001",
+      "actor_type": "HUMAN_APPROVER",
+      "actor_id": "USR-FIN-001",
+      "description": "Otorisasi posting jurnal Seventhsoft disetujui oleh Finance Lead via Telegram Bot Inline Button.",
+      "checksum": "b5d4045c3f466fa91fe2cc6abe79232a1a57cdf104f7a26e716e0a1e2789df78"
+    },
+    {
+      "id": "AUD-LOG-0003",
+      "timestamp": "2026-10-07T14:20:02.000Z",
+      "event": "DRAFT_CREATED",
+      "target_id": "DFT-202610-002",
+      "actor_type": "AI_AGENT",
+      "actor_id": "AI-AGENT-01",
+      "description": "Ekstraksi dokumen ATK selesai. Draf menunggu review Four-Eyes Principle.",
+      "checksum": "c2b48991a0c8427ae41e4649b934ca495991b7852b855e3b0c44298fc1c149af"
+    },
+    {
+      "id": "AUD-LOG-0004",
+      "timestamp": "2026-10-07T09:06:20.927Z",
+      "event": "DRAFT_CREATED",
+      "target_id": "DFT-202610-003",
+      "actor_type": "AI_AGENT",
+      "actor_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "description": "Draft transaksi INVOICE berhasil dibuat oleh AI Agent. Status: PENDING_APPROVAL.",
+      "metadata": {},
+      "checksum": "d073b146074431728f2d598e224780e5d69d5300f83c747ce03ae9027158e61e"
+    },
+    {
+      "id": "AUD-LOG-0005",
+      "timestamp": "2026-10-07T09:06:32.190Z",
+      "event": "GL_POSTED",
+      "target_id": "DFT-202610-003",
+      "actor_type": "HUMAN_APPROVER",
+      "actor_id": "Hendra Wijaya, CA (@finance_lead_sim)",
+      "description": "Draft INVOICE disetujui dan resmi di-posting ke General Ledger Seventhsoft.",
+      "metadata": {},
+      "checksum": "3c4fbe8281c5a46110810d0d92c52dd526c9151d72f83ab8655eab99d1f4838c"
+    },
+    {
+      "id": "AUD-LOG-0006",
+      "timestamp": "2026-10-07T09:08:45.338Z",
+      "event": "GL_POSTED",
+      "target_id": "DFT-202610-002",
+      "actor_type": "HUMAN_APPROVER",
+      "actor_id": "Bpk. Hendra Wijaya, S.Ak., CA (Finance Lead) (@finance_lead_web)",
+      "description": "Draft INV/2026/X/0904 disetujui dan resmi di-posting ke General Ledger Seventhsoft.",
+      "metadata": {},
+      "checksum": "86cd72af562f3d7dbdd1da374a4b83bee560d00c60631b063685e026de1704e6"
+    },
+    {
+      "id": "AUD-LOG-0007",
+      "timestamp": "2026-10-07T09:15:09.038Z",
+      "event": "DRAFT_CREATED",
+      "target_id": "DFT-202610-004",
+      "actor_type": "AI_AGENT",
+      "actor_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "description": "Draft transaksi INV/2026/X/2267 berhasil dibuat oleh AI Agent. Status: PENDING_APPROVAL.",
+      "metadata": {},
+      "checksum": "144a88b81e47ca7391d4b4fee32c9adc8d790ed02dde38e66a5ada8a1f15427d"
+    },
+    {
+      "id": "AUD-LOG-0008",
+      "timestamp": "2026-10-07T09:15:12.177Z",
+      "event": "GL_POSTED",
+      "target_id": "DFT-202610-004",
+      "actor_type": "HUMAN_APPROVER",
+      "actor_id": "Bpk. Hendra Wijaya, S.Ak., CA (Finance Lead) (@finance_lead_web)",
+      "description": "Draft INV/2026/X/2267 disetujui dan resmi di-posting ke General Ledger Seventhsoft.",
+      "metadata": {},
+      "checksum": "851e66504d411d5dfe325948f9bbcb9fda548c209583aa449a6d93b86eba61a4"
+    },
+    {
+      "id": "AUD-LOG-0009",
+      "timestamp": "2026-10-07T09:35:25.828Z",
+      "event": "DRAFT_CREATED",
+      "target_id": "DFT-202610-005",
+      "actor_type": "AI_AGENT",
+      "actor_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "description": "Draft transaksi INV/2026/X/6765 berhasil dibuat oleh AI Agent. Status: PENDING_APPROVAL.",
+      "metadata": {},
+      "checksum": "e3d791542afd046188e59c49c4520c65987059541e435be7e00ab02269344216"
+    },
+    {
+      "id": "AUD-LOG-0010",
+      "timestamp": "2026-10-07T09:35:27.300Z",
+      "event": "DRAFT_CREATED",
+      "target_id": "DFT-202610-006",
+      "actor_type": "AI_AGENT",
+      "actor_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "description": "Draft transaksi INV/2026/X/3791 berhasil dibuat oleh AI Agent. Status: PENDING_APPROVAL.",
+      "metadata": {},
+      "checksum": "bd333d7b40d290251f4b1274f2e3a752e3745c4b15196c2ca6a6eb4fc8c68401"
+    },
+    {
+      "id": "AUD-LOG-0011",
+      "timestamp": "2026-10-07T09:35:28.441Z",
+      "event": "DRAFT_CREATED",
+      "target_id": "DFT-202610-007",
+      "actor_type": "AI_AGENT",
+      "actor_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "description": "Draft transaksi INV/2026/X/9209 berhasil dibuat oleh AI Agent. Status: PENDING_APPROVAL.",
+      "metadata": {},
+      "checksum": "a85d0ca1abde7ba6a8dc78a90d6897fa4a8541e1847bdf29d67cce3fe28200c8"
+    },
+    {
+      "id": "AUD-LOG-0012",
+      "timestamp": "2026-10-07T09:43:53.855Z",
+      "event": "DRAFT_CREATED",
+      "target_id": "DFT-202610-008",
+      "actor_type": "AI_AGENT",
+      "actor_id": "AI-AGENT-01 (Data Entry & Drafting)",
+      "description": "Draft transaksi INV/2026/X/7788 berhasil dibuat oleh AI Agent. Status: PENDING_APPROVAL.",
+      "metadata": {},
+      "checksum": "dfc1c0161f4e53484ecb55ea34dd923415762e38791409d57a55c5275213d515"
+    }
+  ]
+}
