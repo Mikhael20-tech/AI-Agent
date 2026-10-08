@@ -42,18 +42,66 @@
         <span class="hermes-metric-label">Jadwal</span>
         <span class="hermes-metric-val" id="metric-jadwal">3</span>
       </div>
+
+      <!-- Quick Office Controls -->
+      <div class="hermes-quick-tools">
+        <button id="btn-toggle-labels" class="tool-pill-btn" title="Sembunyikan/Tampilkan Nama">🏷️ Label: ON</button>
+        <button id="btn-reset-cam" class="tool-pill-btn" title="Reset Sudut Kamera">🎯 Reset Kamera</button>
+      </div>
+    </div>
+
+    <!-- FILTER BAR DEPARTEMEN / DIVISI -->
+    <div class="office-filter-bar">
+      <button class="filter-chip active" data-filter="all">🌐 Semua Pegawai (30)</button>
+      <button class="filter-chip" data-filter="finance">📊 Akuntansi & Audit (10)</button>
+      <button class="filter-chip" data-filter="tech">💻 Programmer & IT (10)</button>
+      <button class="filter-chip" data-filter="product">🚀 Product & Sales (5)</button>
+      <button class="filter-chip" data-filter="lounge">☕ Kantin & Lounge (5)</button>
     </div>
 
     <!-- 3D THREE.JS CANVAS CONTAINER -->
     <div id="office-canvas-container"></div>
 
-    <!-- 2, 3, 4. HTML OVERLAY LAYER UNTUK SPEECH BUBBLES DI ATAS KEPALA AGEN -->
+    <!-- 2, 3, 4. HTML OVERLAY LAYER UNTUK BADGES & BUBBLES -->
     <div id="office-overlay-layer"></div>
+
+    <!-- EMPLOYEE DOSSIER INSPECTOR DRAWER -->
+    <div id="employee-inspector" class="employee-inspector-drawer">
+      <button class="inspector-close" id="close-inspector">✕</button>
+      <div class="inspector-header">
+        <div class="inspector-avatar" id="insp-avatar">👨‍💻</div>
+        <div class="inspector-titles">
+          <h3 id="insp-name">Nama Pegawai</h3>
+          <span class="inspector-role-badge" id="insp-role">Jabatan</span>
+          <span class="inspector-dept-tag" id="insp-dept">Divisi</span>
+        </div>
+      </div>
+      <div class="inspector-body">
+        <div class="insp-stat-grid">
+          <div class="insp-stat-card">
+            <span class="stat-lbl">Status Kerja</span>
+            <span class="stat-val green" id="insp-status">Aktif Produktif</span>
+          </div>
+          <div class="insp-stat-card">
+            <span class="stat-lbl">Kinerja</span>
+            <span class="stat-val" id="insp-perf">98.5%</span>
+          </div>
+        </div>
+        <div class="insp-section">
+          <label>Tugas yang Sedang Dikerjakan:</label>
+          <p id="insp-task" class="insp-task-text">Sedang memproses pekerjaan...</p>
+        </div>
+        <div class="insp-action-buttons">
+          <button class="btn-insp-action" id="btn-insp-chat">💬 Sapa Pegawai</button>
+          <button class="btn-insp-action secondary" id="btn-insp-task">⚡ Beri Tugas Cepat</button>
+        </div>
+      </div>
+    </div>
 
     <!-- 5. FOOTER STATUS SINKRONISASI (ITEM 5 DI FOTO) -->
     <div class="hermes-bottom-card">
       <span class="live-green-dot"></span>
-      <span>Data asli Seventhsoft & Telegram • diperbarui <strong id="live-sync-time">16.12.00</strong></span>
+      <span>Kantor Pusat Seventhsoft • <strong>30 Pegawai Aktif</strong> • Terhubung Telegram Bot</span>
     </div>
 
   </div>

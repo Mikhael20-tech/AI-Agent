@@ -79,8 +79,9 @@ function handleMessage(msg) {
       loadDrafts();
       if (office3D) {
         if (msg.data.status === 'POSTED') {
+          office3D.triggerCelebration(`Draft ${msg.data.id} resmi disetujui & diposting ke General Ledger Seventhsoft oleh ${msg.data.approver || 'Lead'}`);
           office3D.updateAgentTask('lead-finance', `✅ Disetujui: Jurnal ${msg.data.id} resmi diposting ke GL`, 'approved');
-          office3D.updateAgentTask('agen-rekonsiliasi', `Mencatat mutasi GL untuk ${msg.data.id}`, 'active');
+          office3D.updateAgentTask('agen-rekon', `Mencatat mutasi GL untuk ${msg.data.id}`, 'active');
         } else {
           office3D.updateAgentTask('lead-finance', `❌ Ditolak: Dokumen ${msg.data.id} dikembalikan ke staf`, 'rejected');
         }
@@ -428,4 +429,75 @@ window.addEventListener('DOMContentLoaded', () => {
   connectWebSocket();
   loadDrafts();
   loadAuditLogs();
+
+  // 1. FILTER DIVISI PEGAWAI
+  document.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (office3D) office3D.setDivisionFilter(btn.dataset.filter);
+    });
+  });
+
+  // 2. TOGGLE LABELS & RESET CAMERA
+  const btnToggleLabels = document.getElementById('btn-toggle-labels');
+  if (btnToggleLabels) {
+    btnToggleLabels.addEventListener('click', () => {
+      if (office3D) {
+        const isVis = office3D.toggleLabels();
+        btnToggleLabels.textContent = isVis ? '🏷️ Label: ON' : '🏷️ Label: OFF';
+        btnToggleLabels.style.background = isVis ? '' : '#f43f5e';
+        btnToggleLabels.style.color = isVis ? '' : '#fff';
+      }
+    });
+  }
+
+  const btnResetCam = document.getElementById('btn-reset-cam');
+  if (btnResetCam) {
+    btnResetCam.addEventListener('click', () => {
+      if (office3D && office3D.controls) {
+        office3D.camera.position.copy(office3D.defaultCameraPos);
+        office3D.controls.target.copy(office3D.cameraTarget);
+      }
+    });
+  }
+
+  // 3. EMPLOYEE DOSSIER INSPECTOR
+  const inspector = document.getElementById('employee-inspector');
+  const closeInspector = document.getElementById('close-inspector');
+  if (closeInspector && inspector) {
+    closeInspector.addEventListener('click', () => {
+      inspector.classList.remove('open');
+    });
+  }
+
+  window.addEventListener('employee_selected', (e) => {
+    const emp = e.detail;
+    if (!inspector) return;
+    const nameEl = document.getElementById('insp-name');
+    const roleEl = document.getElementById('insp-role');
+    const deptEl = document.getElementById('insp-dept');
+    const taskEl = document.getElementById('insp-task');
+    const avatarEl = document.getElementById('insp-avatar');
+
+    if (nameEl) nameEl.textContent = emp.name;
+    if (roleEl) roleEl.textContent = emp.role;
+    if (deptEl) deptEl.textContent = `DIVISI ${emp.dept.toUpperCase()}`;
+    if (taskEl) taskEl.textContent = emp.task;
+
+    const avatars = { finance: '📊', tech: '💻', product: '🚀', lounge: '☕' };
+    if (avatarEl) avatarEl.textContent = avatars[emp.dept] || '👤';
+
+    inspector.classList.add('open');
+  });
+
+  document.getElementById('btn-insp-chat')?.addEventListener('click', () => {
+    const name = document.getElementById('insp-name')?.textContent || 'Pegawai';
+    alert(`💬 Anda menyapa ${name}: "Semangat kerjanya ya!" Pegawai tersenyum dan mengangguk ramah.`);
+  });
+
+  document.getElementById('btn-insp-task')?.addEventListener('click', () => {
+    const name = document.getElementById('insp-name')?.textContent || 'Pegawai';
+    alert(`⚡ Tugas prioritas baru berhasil dikirimkan ke antrean kerja ${name}!`);
+  });
 });
