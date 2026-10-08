@@ -153,7 +153,7 @@ export class VirtualOffice3D {
 
   initScene() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf1e4e8);
+    this.scene.background = new THREE.Color(0xf1f5f9);
 
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
@@ -197,10 +197,10 @@ export class VirtualOffice3D {
   }
 
   initLights() {
-    const ambientLight = new THREE.AmbientLight(0xffedf0, 0.72);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.52);
     this.scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xfff8ee, 0.85);
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, 0.95);
     sunLight.position.set(35, 45, 30);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
@@ -214,37 +214,37 @@ export class VirtualOffice3D {
     sunLight.shadow.bias = -0.0003;
     this.scene.add(sunLight);
 
-    const techGlow = new THREE.PointLight(0x00f2fe, 0.45, 25);
+    const techGlow = new THREE.PointLight(0x00f2fe, 0.55, 30);
     techGlow.position.set(0, 5, -16);
     this.scene.add(techGlow);
 
-    const softFill = new THREE.DirectionalLight(0xdce7f5, 0.35);
+    const softFill = new THREE.DirectionalLight(0xdbeafe, 0.35);
     softFill.position.set(-35, 25, -30);
     this.scene.add(softFill);
   }
 
   buildFloorPlan() {
-    // Lantai utama ekstra luas (74 x 56)
+    // Lantai kayu modern Skandinavia / warm parquet
     const floorGeo = new THREE.PlaneGeometry(74, 56);
-    const floorMat = new THREE.MeshLambertMaterial({ color: 0xfce7ec });
+    const floorMat = new THREE.MeshLambertMaterial({ color: 0xe5dcd3 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     this.scene.add(floor);
 
-    // Dinding Belakang
+    // Dinding Belakang Bersih Minimalis
     const backWall = new THREE.Mesh(
       new THREE.BoxGeometry(74, 15, 0.8),
-      new THREE.MeshLambertMaterial({ color: 0xefbcc9 })
+      new THREE.MeshLambertMaterial({ color: 0xf8fafc })
     );
     backWall.position.set(0, 7.5, -28);
     backWall.receiveShadow = true;
     this.scene.add(backWall);
 
-    // Dinding Kiri
+    // Dinding Kiri Bersih Minimalis
     const sideWall = new THREE.Mesh(
       new THREE.BoxGeometry(0.8, 15, 56),
-      new THREE.MeshLambertMaterial({ color: 0xefbcc9 })
+      new THREE.MeshLambertMaterial({ color: 0xf8fafc })
     );
     sideWall.position.set(-37, 7.5, 0);
     sideWall.receiveShadow = true;
@@ -293,7 +293,7 @@ export class VirtualOffice3D {
   buildAccountingZone() {
     const carpet = new THREE.Mesh(
       new THREE.PlaneGeometry(32, 28),
-      new THREE.MeshLambertMaterial({ color: 0xf9a8d4 })
+      new THREE.MeshLambertMaterial({ color: 0xfce7f3 })
     );
     carpet.rotation.x = -Math.PI / 2;
     carpet.position.set(-20, 0.02, -5);
@@ -332,7 +332,7 @@ export class VirtualOffice3D {
   buildTechLabZone() {
     const techCarpet = new THREE.Mesh(
       new THREE.PlaneGeometry(30, 24),
-      new THREE.MeshLambertMaterial({ color: 0x93c5fd })
+      new THREE.MeshLambertMaterial({ color: 0xbae6fd })
     );
     techCarpet.rotation.x = -Math.PI / 2;
     techCarpet.position.set(0, 0.02, -15);
@@ -377,7 +377,7 @@ export class VirtualOffice3D {
   buildCanteenZone() {
     const canteenFloor = new THREE.Mesh(
       new THREE.PlaneGeometry(28, 22),
-      new THREE.MeshLambertMaterial({ color: 0xa7f3d0 })
+      new THREE.MeshLambertMaterial({ color: 0xd1fae5 })
     );
     canteenFloor.rotation.x = -Math.PI / 2;
     canteenFloor.position.set(22, 0.025, -16);
@@ -423,7 +423,7 @@ export class VirtualOffice3D {
   buildLoungeZone() {
     const loungeFloor = new THREE.Mesh(
       new THREE.PlaneGeometry(28, 24),
-      new THREE.MeshLambertMaterial({ color: 0xe9d5ff })
+      new THREE.MeshLambertMaterial({ color: 0xf3e8ff })
     );
     loungeFloor.rotation.x = -Math.PI / 2;
     loungeFloor.position.set(22, 0.02, 14);
@@ -494,7 +494,7 @@ export class VirtualOffice3D {
   buildReceptionZone() {
     const lobbyFloor = new THREE.Mesh(
       new THREE.PlaneGeometry(24, 18),
-      new THREE.MeshLambertMaterial({ color: 0xfef08a })
+      new THREE.MeshLambertMaterial({ color: 0xfef3c7 })
     );
     lobbyFloor.rotation.x = -Math.PI / 2;
     lobbyFloor.position.set(-3, 0.02, 17);
@@ -762,42 +762,42 @@ export class VirtualOffice3D {
   build30Employees() {
     const employeeData = [
       // --- DIVISI 1: AKUNTANSI & KEUANGAN (Sayap Kiri Luas - 10 Orang) ---
-      { id: 'lead-finance', name: 'Mikhael', role: 'Finance Lead (Approver GL)', dept: 'finance', x: -18, z: -21, anchorY: 5.6, chairColor: 0x7c3aed, shirt: 0x6d28d9, hair: 0x18181b, task: '🛡️ Otorisasi final posting GL Seventhsoft via Telegram', isLead: true },
-      { id: 'agent-entry', name: 'agen-entry', role: 'AI Data Entry & OCR', dept: 'finance', x: -30, z: -21, anchorY: 5.1, chairColor: 0xec4899, shirt: 0x059669, hair: 0x451a03, task: '📄 Ekstraksi faktur & Masking PDP (Modul Beli)' },
-      { id: 'agent-rekon', name: 'agen-rekon', role: 'AI Rekonsiliasi Bank', dept: 'finance', x: -30, z: -13, anchorY: 5.5, chairColor: 0x3b82f6, shirt: 0x0284c7, hair: 0x3b1e08, task: '🏦 Pencocokan e-statement BCA vs Kas Seventhsoft' },
-      { id: 'agent-pajak', name: 'agen-pajak', role: 'AI Pajak & Margin', dept: 'finance', x: -18, z: -13, anchorY: 5.1, chairColor: 0xf59e0b, shirt: 0xd97706, hair: 0x172554, task: '📊 Proyeksi PPN 11% & Deteksi anomali HPP' },
-      { id: 'staff-maya', name: 'Maya', role: 'Senior Auditor', dept: 'finance', x: -30, z: -5, anchorY: 5.5, chairColor: 0x14b8a6, shirt: 0x0d9488, hair: 0x7c2d12, task: '🔍 Tinjau audit log checksum SHA-256' },
-      { id: 'staff-rian', name: 'Rian', role: 'Staf Pajak e-Faktur', dept: 'finance', x: -18, z: -5, anchorY: 5.1, chairColor: 0x6366f1, shirt: 0x4f46e5, hair: 0x18181b, task: '📑 Rekapitulasi SPT Masa & PPh 23' },
-      { id: 'staff-dimas', name: 'Dimas', role: 'Junior Accountant', dept: 'finance', x: -30, z: 3, anchorY: 5.4, chairColor: 0x06b6d4, shirt: 0x0891b2, hair: 0x27272a, task: '📋 Verifikasi fisik surat jalan & invoice vendor' },
-      { id: 'staff-nadia', name: 'Nadia', role: 'Billing & AR Specialist', dept: 'finance', x: -18, z: 3, anchorY: 5.1, chairColor: 0xf43f5e, shirt: 0xe11d48, hair: 0x451a03, task: '💳 Monitor piutang dagang jatuh tempo' },
-      { id: 'staff-doni', name: 'Doni', role: 'Payroll Specialist', dept: 'finance', x: -24, z: 10, anchorY: 5.3, chairColor: 0x8b5cf6, shirt: 0x7c3aed, hair: 0x1c1917, task: '💼 Perhitungan slip gaji & potongan PPh 21' },
-      { id: 'staff-budi-kurir', name: 'Budi', role: 'Kurir Berkas Akuntansi', dept: 'finance', anchorY: 5.4, isWalker: true, route: 'finance', shirt: 0xf59e0b, task: '🚶 Antar map invoice dari meja Entry ke meja Lead' },
+      { id: 'lead-finance', name: 'Mikhael', role: 'Finance Lead (Approver GL)', dept: 'finance', x: -18, z: -21, anchorY: 6.8, chairColor: 0x7c3aed, shirt: 0x6d28d9, hair: 0x18181b, task: '🛡️ Otorisasi final posting GL Seventhsoft via Telegram', isLead: true },
+      { id: 'agent-entry', name: 'agen-entry', role: 'AI Data Entry & OCR', dept: 'finance', x: -30, z: -21, anchorY: 6.4, chairColor: 0xec4899, shirt: 0x059669, hair: 0x451a03, task: '📄 Ekstraksi faktur & Masking PDP (Modul Beli)' },
+      { id: 'agent-rekon', name: 'agen-rekon', role: 'AI Rekonsiliasi Bank', dept: 'finance', x: -30, z: -13, anchorY: 5.7, chairColor: 0x3b82f6, shirt: 0x0284c7, hair: 0x3b1e08, task: '🏦 Pencocokan e-statement BCA vs Kas Seventhsoft' },
+      { id: 'agent-pajak', name: 'agen-pajak', role: 'AI Pajak & Margin', dept: 'finance', x: -18, z: -13, anchorY: 5.4, chairColor: 0xf59e0b, shirt: 0xd97706, hair: 0x172554, task: '📊 Proyeksi PPN 11% & Deteksi anomali HPP' },
+      { id: 'staff-maya', name: 'Maya', role: 'Senior Auditor', dept: 'finance', x: -30, z: -5, anchorY: 5.0, chairColor: 0x14b8a6, shirt: 0x0d9488, hair: 0x7c2d12, task: '🔍 Tinjau audit log checksum SHA-256' },
+      { id: 'staff-rian', name: 'Rian', role: 'Staf Pajak e-Faktur', dept: 'finance', x: -18, z: -5, anchorY: 4.7, chairColor: 0x6366f1, shirt: 0x4f46e5, hair: 0x18181b, task: '📑 Rekapitulasi SPT Masa & PPh 23' },
+      { id: 'staff-dimas', name: 'Dimas', role: 'Junior Accountant', dept: 'finance', x: -30, z: 3, anchorY: 4.8, chairColor: 0x06b6d4, shirt: 0x0891b2, hair: 0x27272a, task: '📋 Verifikasi fisik surat jalan & invoice vendor' },
+      { id: 'staff-nadia', name: 'Nadia', role: 'Billing & AR Specialist', dept: 'finance', x: -18, z: 3, anchorY: 4.5, chairColor: 0xf43f5e, shirt: 0xe11d48, hair: 0x451a03, task: '💳 Monitor piutang dagang jatuh tempo' },
+      { id: 'staff-doni', name: 'Doni', role: 'Payroll Specialist', dept: 'finance', x: -24, z: 10, anchorY: 4.5, chairColor: 0x8b5cf6, shirt: 0x7c3aed, hair: 0x1c1917, task: '💼 Perhitungan slip gaji & potongan PPh 21' },
+      { id: 'staff-budi-kurir', name: 'Budi', role: 'Kurir Berkas Akuntansi', dept: 'finance', anchorY: 5.6, isWalker: true, route: 'finance', shirt: 0xf59e0b, task: '🚶 Antar map invoice dari meja Entry ke meja Lead' },
 
       // --- DIVISI 2: PROGRAMMER & SOFTWARE ENGINEERING (Tech Lab Tengah - 10 Orang) ---
-      { id: 'dev-kevin', name: 'Kevin', role: 'Lead Backend Engineer', dept: 'tech', x: -7, z: -20, anchorY: 5.1, isDev: true, chairColor: 0x10b981, shirt: 0x047857, hair: 0x18181b, task: '💻 Maintain REST API Seventhsoft & Webhook n8n' },
-      { id: 'dev-sarah', name: 'Sarah', role: 'Frontend React Engineer', dept: 'tech', x: 1, z: -20, anchorY: 5.5, isDev: true, chairColor: 0x06b6d4, shirt: 0x0284c7, hair: 0x78350f, task: '⚛️ Build UI Virtual Office & Live Dashboard' },
-      { id: 'dev-reza', name: 'Reza', role: 'System Architect', dept: 'tech', x: 9, z: -20, anchorY: 5.1, isDev: true, chairColor: 0x8b5cf6, shirt: 0x6d28d9, hair: 0x0f172a, task: '🏗️ Arsitektur High-Availability Microservices' },
-      { id: 'dev-aris', name: 'Aris', role: 'AI & LLM Engineer', dept: 'tech', x: -7, z: -12, anchorY: 5.5, isDev: true, chairColor: 0xf43f5e, shirt: 0xbe123c, hair: 0x27272a, task: '🧠 Fine-tuning Model OCR & Sanitasi Data PDP' },
-      { id: 'dev-bambang', name: 'Bambang', role: 'Database Administrator', dept: 'tech', x: 1, z: -12, anchorY: 5.1, isDev: true, chairColor: 0x3b82f6, shirt: 0x1d4ed8, hair: 0x1c1917, task: '🗄️ Optimasi query General Ledger & Indexing DB' },
-      { id: 'dev-deni', name: 'Deni', role: 'DevOps & Cloud Engineer', dept: 'tech', x: 9, z: -12, anchorY: 5.5, isDev: true, chairColor: 0x14b8a6, shirt: 0x0f766e, hair: 0x18181b, task: '🐳 Monitoring Docker, Caddy HTTPS, & VPS' },
-      { id: 'dev-clara', name: 'Clara', role: 'QA & Test Automation', dept: 'tech', x: -7, z: -4, anchorY: 5.1, isDev: true, chairColor: 0xec4899, shirt: 0xdb2777, hair: 0x451a03, task: '🧪 Automasi testing siklus posting transaksi' },
-      { id: 'dev-fikri', name: 'Fikri', role: 'Mobile App Developer', dept: 'tech', x: 1, z: -4, anchorY: 5.5, isDev: true, chairColor: 0xeab308, shirt: 0xca8a04, hair: 0x292524, task: '📱 Sinkronisasi Mobile App Seventhsoft' },
-      { id: 'dev-adit', name: 'Adit', role: 'Cybersecurity Engineer', dept: 'tech', x: 9, z: -4, anchorY: 5.1, isDev: true, chairColor: 0x64748b, shirt: 0x334155, hair: 0x0f172a, task: '🔒 Penetrasi testing & Verifikasi hash SHA-256' },
+      { id: 'dev-kevin', name: 'Kevin', role: 'Lead Backend Engineer', dept: 'tech', x: -7, z: -20, anchorY: 6.8, isDev: true, chairColor: 0x10b981, shirt: 0x047857, hair: 0x18181b, task: '💻 Maintain REST API Seventhsoft & Webhook n8n' },
+      { id: 'dev-sarah', name: 'Sarah', role: 'Frontend React Engineer', dept: 'tech', x: 1, z: -20, anchorY: 7.1, isDev: true, chairColor: 0x06b6d4, shirt: 0x0284c7, hair: 0x78350f, task: '⚛️ Build UI Virtual Office & Live Dashboard' },
+      { id: 'dev-reza', name: 'Reza', role: 'System Architect', dept: 'tech', x: 9, z: -20, anchorY: 6.8, isDev: true, chairColor: 0x8b5cf6, shirt: 0x6d28d9, hair: 0x0f172a, task: '🏗️ Arsitektur High-Availability Microservices' },
+      { id: 'dev-aris', name: 'Aris', role: 'AI & LLM Engineer', dept: 'tech', x: -7, z: -12, anchorY: 5.8, isDev: true, chairColor: 0xf43f5e, shirt: 0xbe123c, hair: 0x27272a, task: '🧠 Fine-tuning Model OCR & Sanitasi Data PDP' },
+      { id: 'dev-bambang', name: 'Bambang', role: 'Database Administrator', dept: 'tech', x: 1, z: -12, anchorY: 5.5, isDev: true, chairColor: 0x3b82f6, shirt: 0x1d4ed8, hair: 0x1c1917, task: '🗄️ Optimasi query General Ledger & Indexing DB' },
+      { id: 'dev-deni', name: 'Deni', role: 'DevOps & Cloud Engineer', dept: 'tech', x: 9, z: -12, anchorY: 5.8, isDev: true, chairColor: 0x14b8a6, shirt: 0x0f766e, hair: 0x18181b, task: '🐳 Monitoring Docker, Caddy HTTPS, & VPS' },
+      { id: 'dev-clara', name: 'Clara', role: 'QA & Test Automation', dept: 'tech', x: -7, z: -4, anchorY: 4.8, isDev: true, chairColor: 0xec4899, shirt: 0xdb2777, hair: 0x451a03, task: '🧪 Automasi testing siklus posting transaksi' },
+      { id: 'dev-fikri', name: 'Fikri', role: 'Mobile App Developer', dept: 'tech', x: 1, z: -4, anchorY: 4.5, isDev: true, chairColor: 0xeab308, shirt: 0xca8a04, hair: 0x292524, task: '📱 Sinkronisasi Mobile App Seventhsoft' },
+      { id: 'dev-adit', name: 'Adit', role: 'Cybersecurity Engineer', dept: 'tech', x: 9, z: -4, anchorY: 4.8, isDev: true, chairColor: 0x64748b, shirt: 0x334155, hair: 0x0f172a, task: '🔒 Penetrasi testing & Verifikasi hash SHA-256' },
       { id: 'dev-yoga', name: 'Yoga', role: 'IT Support & Infra', dept: 'tech', anchorY: 5.4, isWalker: true, route: 'tech', shirt: 0x0ea5e9, task: '🚶 Cek kabel LAN switch & temperatur server' },
 
       // --- DIVISI 3: PRODUCT & BUSINESS (Sayap Depan - 5 Orang) ---
       { id: 'biz-farhan', name: 'Farhan', role: 'Product Manager', dept: 'product', x: -26, z: 18, anchorY: 5.2, chairColor: 0xa855f7, shirt: 0x7e22ce, hair: 0x18181b, task: '📅 Perencanaan rilis fitur Seventhsoft v3.2' },
-      { id: 'biz-lina', name: 'Lina', role: 'UI/UX Designer', dept: 'product', x: -17, z: 18, anchorY: 5.5, chairColor: 0xf43f5e, shirt: 0xf43f5e, hair: 0x7c2d12, task: '🎨 Desain prototipe navigasi modul gudang' },
+      { id: 'biz-lina', name: 'Lina', role: 'UI/UX Designer', dept: 'product', x: -17, z: 18, anchorY: 4.8, chairColor: 0xf43f5e, shirt: 0xf43f5e, hair: 0x7c2d12, task: '🎨 Desain prototipe navigasi modul gudang' },
       { id: 'biz-tania', name: 'Tania', role: 'Customer Success', dept: 'product', x: -8, z: 18, anchorY: 5.2, chairColor: 0x10b981, shirt: 0x059669, hair: 0x292524, task: '🎧 Pandu klien akuntan baru via ticketing' },
-      { id: 'biz-bagus', name: 'Bagus', role: 'Enterprise Sales', dept: 'product', x: -21, z: 24, anchorY: 5.5, chairColor: 0x3b82f6, shirt: 0x1d4ed8, hair: 0x1c1917, task: '🤝 Demo otomatisasi AI ke klien korporasi' },
-      { id: 'biz-putri', name: 'Putri', role: 'Technical Writer', dept: 'product', x: -12, z: 24, anchorY: 5.2, chairColor: 0xfbbf24, shirt: 0xd97706, hair: 0x451a03, task: '📖 Update dokumentasi SOP Four-Eyes Principle' },
+      { id: 'biz-bagus', name: 'Bagus', role: 'Enterprise Sales', dept: 'product', x: -21, z: 24, anchorY: 4.7, chairColor: 0x3b82f6, shirt: 0x1d4ed8, hair: 0x1c1917, task: '🤝 Demo otomatisasi AI ke klien korporasi' },
+      { id: 'biz-putri', name: 'Putri', role: 'Technical Writer', dept: 'product', x: -12, z: 24, anchorY: 4.4, chairColor: 0xfbbf24, shirt: 0xd97706, hair: 0x451a03, task: '📖 Update dokumentasi SOP Four-Eyes Principle' },
 
       // --- DIVISI 4: PANTRY, KANTIN, LOUNGE & LOBBY (Sayap Kanan & Depan - 5 Orang) ---
-      { id: 'cafe-koko', name: 'Koko', role: 'Barista Kantor', dept: 'lounge', x: 20, z: -22, anchorY: 5.3, isStanding: true, shirt: 0x78350f, hair: 0x18181b, task: '☕ Seduh kopi espresso untuk programmer & akuntan' },
-      { id: 'cafe-buan', name: 'Bu Ani', role: 'Chef Kantin', dept: 'lounge', x: 28, z: -22, anchorY: 5.5, isStanding: true, shirt: 0xe11d48, hair: 0x451a03, task: '🥪 Siapkan snack sehat & kue sore kantor' },
-      { id: 'lounge-gilang', name: 'Gilang', role: 'Staff Istirahat Lounge', dept: 'lounge', x: 22, z: 13, anchorY: 5.2, isSittingSofa: true, shirt: 0x10b981, hair: 0x27272a, task: '🎮 Main game konsol di smart TV lounge' },
-      { id: 'lobby-bella', name: 'Bella', role: 'Front Desk Receptionist', dept: 'lounge', x: 1, z: 12, anchorY: 5.3, isFrontDesk: true, shirt: 0xd946ef, hair: 0x18181b, task: '🛎️ Sambut tamu klien akuntansi di lobby' },
-      { id: 'staff-siti-jalan', name: 'Siti', role: 'Staff Keuangan', dept: 'lounge', anchorY: 5.4, isWalker: true, route: 'canteen', shirt: 0xf43f5e, task: '🚶 OTW ambil air galon di dispenser pantry' }
+      { id: 'cafe-koko', name: 'Koko', role: 'Barista Kantor', dept: 'lounge', x: 20, z: -22, anchorY: 6.2, isStanding: true, shirt: 0x78350f, hair: 0x18181b, task: '☕ Seduh kopi espresso untuk programmer & akuntan' },
+      { id: 'cafe-buan', name: 'Bu Ani', role: 'Chef Kantin', dept: 'lounge', x: 28, z: -22, anchorY: 6.5, isStanding: true, shirt: 0xe11d48, hair: 0x451a03, task: '🥪 Siapkan snack sehat & kue sore kantor' },
+      { id: 'lounge-gilang', name: 'Gilang', role: 'Staff Istirahat Lounge', dept: 'lounge', x: 22, z: 13, anchorY: 4.6, isSittingSofa: true, shirt: 0x10b981, hair: 0x27272a, task: '🎮 Main game konsol di smart TV lounge' },
+      { id: 'lobby-bella', name: 'Bella', role: 'Front Desk Receptionist', dept: 'lounge', x: 1, z: 12, anchorY: 4.8, isFrontDesk: true, shirt: 0xd946ef, hair: 0x18181b, task: '🛎️ Sambut tamu klien akuntansi di lobby' },
+      { id: 'staff-siti-jalan', name: 'Siti', role: 'Staff Keuangan', dept: 'lounge', anchorY: 5.2, isWalker: true, route: 'canteen', shirt: 0xf43f5e, task: '🚶 OTW ambil air galon di dispenser pantry' }
     ];
 
     employeeData.forEach(emp => {
@@ -832,6 +832,9 @@ export class VirtualOffice3D {
     });
 
     char.root.position.set(emp.x, 0, emp.z);
+    if (emp.isSittingSofa || emp.isFrontDesk) {
+      char.root.rotation.y = Math.PI; // Hadap ke depan ke arah pengunjung/kamera!
+    }
     char.root.userData = { empId: emp.id, empData: emp };
 
     // Register mesh untuk raycaster klik
