@@ -185,14 +185,15 @@
       "grand_total": 16650000,
       "coa_debet": "5-1200 (Beban Perlengkapan/Persediaan)",
       "coa_kredit": "2-1100 (Hutang Usaha)",
-      "status": "PENDING_APPROVAL",
+      "status": "POSTED",
       "creator_agent_id": "AI-AGENT-01 (Data Entry & Drafting)",
-      "approver_user_id": null,
-      "approval_notes": null,
+      "approver_user_id": "mikhael (@myeap29)",
+      "approval_notes": "Disetujui dan diotorisasi via Telegram Bot Inline Button",
       "created_at": "2026-10-07T09:35:25.801Z",
-      "posted_at": null,
+      "posted_at": "2026-10-08T03:54:25.379Z",
       "is_deleted": false,
-      "hash_signature": "45da178727f4fc7cdf48137b59dba3aac968a27b5983edd1601829abfba8196f"
+      "hash_signature": "45da178727f4fc7cdf48137b59dba3aac968a27b5983edd1601829abfba8196f",
+      "updated_at": "2026-10-08T03:54:25.381Z"
     },
     {
       "id": "DFT-202610-006",
@@ -494,6 +495,17 @@
       "description": "Draft transaksi INV/2026/X/7788 berhasil dibuat oleh AI Agent. Status: PENDING_APPROVAL.",
       "metadata": {},
       "checksum": "dfc1c0161f4e53484ecb55ea34dd923415762e38791409d57a55c5275213d515"
+    },
+    {
+      "id": "AUD-LOG-0013",
+      "timestamp": "2026-10-08T03:54:25.382Z",
+      "event": "GL_POSTED",
+      "target_id": "DFT-202610-005",
+      "actor_type": "HUMAN_APPROVER",
+      "actor_id": "mikhael (@myeap29)",
+      "description": "Draft INV/2026/X/6765 disetujui dan resmi di-posting ke General Ledger Seventhsoft.",
+      "metadata": {},
+      "checksum": "ade1431322a0abb3143da305f14b8b8ea546607b578f7f60057658338351ee23"
     }
   ]
 }

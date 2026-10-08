@@ -97,10 +97,62 @@ function handleMessage(msg) {
       break;
 
     case 'EMPLOYEE_SPEECH':
-      if (office3D) {
-        office3D.triggerEmployeeSpeech(msg.data.empId, msg.data.name, msg.data.speech);
-      }
+      handleLiveEmployeeSpeech(msg.data);
       break;
+  }
+}
+
+let broadcastTimer = null;
+function handleLiveEmployeeSpeech(data) {
+  // 1. Tampilkan di 3D Virtual Office
+  if (office3D) {
+    office3D.triggerEmployeeSpeech(data.empId, data.name, data.speech);
+  }
+
+  // 2. Tampilkan di Banner Tulisan Atas Web yang Mencolok
+  const bcBar = document.getElementById('live-chat-broadcast-bar');
+  const bcSender = document.getElementById('bc-sender');
+  const bcText = document.getElementById('bc-text');
+  const bcAvatar = document.getElementById('bc-avatar');
+
+  if (bcBar && bcSender && bcText) {
+    bcSender.textContent = `${data.name} (${data.role || 'Staf Seventhsoft'})`;
+    bcText.textContent = `"${data.speech}"`;
+
+    const avatarMap = {
+      'biz-bagus': '👨‍💼',
+      'dev-kevin': '💻',
+      'dev-sarah': '👩‍💻',
+      'cafe-koko': '☕',
+      'staff-budi-kurir': '🏃‍♂️',
+      'staff-maya': '📑',
+      'lobby-bella': '🛎️',
+      'lounge-gilang': '🎮'
+    };
+    if (bcAvatar) {
+      bcAvatar.textContent = avatarMap[data.empId] || '💬';
+    }
+
+    bcBar.classList.remove('hidden');
+
+    if (broadcastTimer) clearTimeout(broadcastTimer);
+    broadcastTimer = setTimeout(() => {
+      bcBar.classList.add('hidden');
+    }, 9000);
+  }
+
+  // 3. Tambahkan juga ke Simulator Chat Smartphone di Bawah
+  appendTelegramMockMessage({
+    type: 'NOTIFICATION_DRAFT',
+    text: `💬 <b>${data.name} (${data.role}):</b>\n"${data.speech}"`,
+    timestamp: new Date().toISOString()
+  });
+
+  // 4. Update counter obrolan aktif di header
+  const metricObrolan = document.getElementById('metric-obrolan');
+  if (metricObrolan) {
+    const current = parseInt(metricObrolan.textContent || '12', 10);
+    metricObrolan.textContent = (current + 1).toString();
   }
 }
 
@@ -468,7 +520,30 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. EMPLOYEE DOSSIER INSPECTOR
+  // 3. FILTER DEPARTEMEN / DIVISI PEGAWAI
+  const filterChips = document.querySelectorAll('.filter-chip');
+  filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      filterChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const dept = chip.dataset.filter;
+      if (office3D) {
+        office3D.setDivisionFilter(dept);
+      }
+    });
+  });
+
+  // 4. TUTUP BANNER BROADCAST CHAT DI ATAS
+  const btnCloseBc = document.getElementById('btn-close-bc');
+  if (btnCloseBc) {
+    btnCloseBc.addEventListener('click', () => {
+      const bcBar = document.getElementById('live-chat-broadcast-bar');
+      if (bcBar) bcBar.classList.add('hidden');
+      if (broadcastTimer) clearTimeout(broadcastTimer);
+    });
+  }
+
+  // 5. EMPLOYEE DOSSIER INSPECTOR
   const inspector = document.getElementById('employee-inspector');
   const closeInspector = document.getElementById('close-inspector');
   if (closeInspector && inspector) {
