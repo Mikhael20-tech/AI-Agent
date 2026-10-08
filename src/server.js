@@ -47,6 +47,12 @@ telegramService.startPolling();
 // WEBSOCKET BROADCAST SYSTEM
 // ============================================================================
 const connectedClients = new Set();
+let lastEmployeeSpeech = {
+  empId: 'biz-bagus',
+  name: 'Bagus',
+  role: 'Enterprise Sales Lead',
+  speech: 'Baik Pak Mikhael! Seluruh 30 staf di Kantor AI Seventhsoft dalam keadaan aktif dan siap membantu.'
+};
 
 wss.on('connection', (ws) => {
   connectedClients.add(ws);
@@ -60,7 +66,8 @@ wss.on('connection', (ws) => {
     audit_logs: db.getAuditLogs().slice(0, 15),
     reconciliation: db.getReconciliation(),
     tax_summary: db.getTaxSummary(),
-    settings: db.getSettings()
+    settings: db.getSettings(),
+    recent_speech: lastEmployeeSpeech
   }));
 
   ws.on('close', () => {
@@ -81,7 +88,11 @@ function broadcast(eventType, data) {
 eventBus.on('avatar_state', (payload) => broadcast('AVATAR_STATE', payload));
 eventBus.on('telegram_message_sent', (payload) => broadcast('TELEGRAM_MESSAGE', payload));
 eventBus.on('draft_updated', (payload) => broadcast('DRAFT_UPDATED', payload));
-eventBus.on('employee_speech', (payload) => broadcast('EMPLOYEE_SPEECH', payload));
+eventBus.on('employee_speech', (payload) => {
+  lastEmployeeSpeech = payload;
+  console.log(`[WS BROADCAST] employee_speech: ${payload.name} -> "${payload.speech}" ke ${connectedClients.size} klien`);
+  broadcast('EMPLOYEE_SPEECH', payload);
+});
 
 // ============================================================================
 // REST API ROUTES

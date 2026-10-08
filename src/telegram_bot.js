@@ -238,6 +238,8 @@ export class TelegramBotService {
               const chatId = update.message.chat.id;
               const fromUser = update.message.from;
 
+              console.log(`[TELEGRAM CHAT MASUK] Dari ${fromUser?.first_name || 'User'} (${chatId}): "${rawText}"`);
+
               if (rawText === '/start') {
                 await this.sendCustomMessage(chatId, `🤖 <b>Halo Finance Lead (${fromUser.first_name || 'Bpk. Mikhael'})!</b>\n\nSelamat datang di Bot Resmi <b>AI Agent Akuntansi Seventhsoft</b>.\n\n✨ <b>Apa saja yang bisa Anda lakukan:</b>\n1. Menerima & mengotorisasi draf transaksi secara aman <i>(Four-Eyes Principle)</i>.\n2. Mengobrol langsung dengan 30 staf kantor! (Contoh: ketik <i>"Gimana kabarmu Bagus"</i>, <i>"Halo Kevin"</i>, <i>"Koko minta kopi"</i>, atau <i>"Budi antar berkas"</i>).`);
                 continue;
@@ -245,6 +247,8 @@ export class TelegramBotService {
 
               const reply = this.generateEmployeeResponse(rawText, fromUser);
               if (reply) {
+                console.log(`[TELEGRAM CHAT BALAS] Ke ${chatId} | ${reply.name}: "${reply.speech}"`);
+
                 // Pancarkan event ke Virtual Office 3D via WebSocket
                 this.eventBus.emit('employee_speech', {
                   empId: reply.empId,

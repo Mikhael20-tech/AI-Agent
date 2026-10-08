@@ -61,6 +61,9 @@ function handleMessage(msg) {
       if (msg.reconciliation) renderReconciliation(msg.reconciliation);
       if (msg.tax_summary) renderTaxSummary(msg.tax_summary);
       if (msg.settings) populateSettings(msg.settings);
+      if (msg.recent_speech) {
+        setTimeout(() => handleLiveEmployeeSpeech(msg.recent_speech), 800);
+      }
       break;
 
     case 'AVATAR_STATE':
@@ -160,7 +163,7 @@ function handleLiveEmployeeSpeech(data) {
     if (broadcastTimer) clearTimeout(broadcastTimer);
     broadcastTimer = setTimeout(() => {
       bcBar.classList.add('hidden');
-    }, 9000);
+    }, 18000);
   }
 
   // 3. Tambahkan juga ke Simulator Chat Smartphone di Bawah
