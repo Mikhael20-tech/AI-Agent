@@ -1067,6 +1067,7 @@ body {
   transform: translateX(-50%);
   height: 44px;
   max-height: 44px;
+  max-width: 95%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1080,6 +1081,12 @@ body {
   z-index: 60;
   pointer-events: auto;
   white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.office-filter-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .filter-chip {

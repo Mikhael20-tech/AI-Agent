@@ -285,6 +285,24 @@ export class TelegramBotService {
       };
     }
 
+    if (lower.includes('doni') || lower.includes('payroll') || lower.includes('gaji')) {
+      return {
+        empId: 'staff-doni',
+        name: 'Doni',
+        role: 'Payroll Specialist',
+        speech: `Halo ${callerName}! Kabar baik. Saya sedang memproses rekapitulasi slip gaji dan perhitungan PPh 21 karyawan bulan ini.`
+      };
+    }
+
+    if (lower.includes('yoga') || lower.includes('infra') || lower.includes('jaringan')) {
+      return {
+        empId: 'dev-yoga',
+        name: 'Yoga',
+        role: 'IT Support & Infra',
+        speech: `Siap ${callerName}, kabar baik! Jaringan LAN dan server Seventhsoft stabil, temperatur ruang server aman 21°C.`
+      };
+    }
+
     if (lower.includes('kevin')) {
       return {
         empId: 'dev-kevin',
@@ -300,6 +318,69 @@ export class TelegramBotService {
         name: 'Sarah',
         role: 'Frontend React Engineer',
         speech: `Halo ${callerName}! Kabar baik, ini saya lagi optimasi dashboard Virtual Office 3D biar makin interaktif dan ringan di layar Bapak.`
+      };
+    }
+
+    if (lower.includes('reza') || lower.includes('architect')) {
+      return {
+        empId: 'dev-reza',
+        name: 'Reza',
+        role: 'System Architect',
+        speech: `Halo ${callerName}! Kabar baik, saya lagi menyusun blueprint high-availability microservices Seventhsoft agar siap menampung ribuan transaksi simultan.`
+      };
+    }
+
+    if (lower.includes('aris') || lower.includes('llm') || lower.includes('ai engineer')) {
+      return {
+        empId: 'dev-aris',
+        name: 'Aris',
+        role: 'AI & LLM Engineer',
+        speech: `Baik ${callerName}! Model OCR dan sanitasi data pribadi (UU PDP) berjalan dengan akurasi 99.4% pada modul ekstraksi invoice.`
+      };
+    }
+
+    if (lower.includes('bambang') || lower.includes('database') || lower.includes('db')) {
+      return {
+        empId: 'dev-bambang',
+        name: 'Bambang',
+        role: 'Database Administrator',
+        speech: `Halo ${callerName}! Query General Ledger Seventhsoft sudah dioptimasi, indexing tabel jurnal berjalan mulus tanpa beban berat.`
+      };
+    }
+
+    if (lower.includes('deni') || lower.includes('devops') || lower.includes('cloud')) {
+      return {
+        empId: 'dev-deni',
+        name: 'Deni',
+        role: 'DevOps & Cloud Engineer',
+        speech: `Aman ${callerName}! Container Docker di VPS, sertifikat SSL Caddy, dan webhook n8n terpantau hijau 100% uptime.`
+      };
+    }
+
+    if (lower.includes('clara') || lower.includes('qa') || lower.includes('tester')) {
+      return {
+        empId: 'dev-clara',
+        name: 'Clara',
+        role: 'QA & Test Automation',
+        speech: `Kabar baik ${callerName}! Seluruh 48 test suite otomatis untuk siklus posting jurnal transaksi lulus 100% tanpa error.`
+      };
+    }
+
+    if (lower.includes('fikri') || lower.includes('mobile') || lower.includes('android')) {
+      return {
+        empId: 'dev-fikri',
+        name: 'Fikri',
+        role: 'Mobile App Developer',
+        speech: `Halo ${callerName}! Aplikasi mobile approval akuntansi sedang kami sinkronisasi agar notifikasi persetujuan transaksi muncul instan di smartphone.`
+      };
+    }
+
+    if (lower.includes('adit') || lower.includes('security') || lower.includes('cyber')) {
+      return {
+        empId: 'dev-adit',
+        name: 'Adit',
+        role: 'Cybersecurity Engineer',
+        speech: `Siap ${callerName}! Enkripsi hash SHA-256 pada audit trail transaksi terlindungi ketat sesuai standar UU ITE.`
       };
     }
 
@@ -348,6 +429,51 @@ export class TelegramBotService {
       };
     }
 
+    if (lower.includes('nadia') || lower.includes('ar') || lower.includes('piutang') || lower.includes('billing')) {
+      return {
+        empId: 'staff-nadia',
+        name: 'Nadia',
+        role: 'Billing & AR Specialist',
+        speech: `Kabar baik ${callerName}! Monitor piutang dagang berjalan tertib, reminder otomatis ke klien yang mendekati tempo sudah siap dikirim.`
+      };
+    }
+
+    if (lower.includes('farhan') || lower.includes('pm') || lower.includes('product manager')) {
+      return {
+        empId: 'biz-farhan',
+        name: 'Farhan',
+        role: 'Product Manager',
+        speech: `Kabar baik ${callerName}! Roadmap fitur automasi Seventhsoft v3.2 sudah final dan siap masuk sprint engineering minggu depan.`
+      };
+    }
+
+    if (lower.includes('lina') || lower.includes('ui') || lower.includes('ux') || lower.includes('desain')) {
+      return {
+        empId: 'biz-lina',
+        name: 'Lina',
+        role: 'UI/UX Designer',
+        speech: `Halo ${callerName}! Sedang merapikan prototipe antarmuka modern untuk modul stok gudang Seventhsoft biar makin intuitif.`
+      };
+    }
+
+    if (lower.includes('tania') || lower.includes('cs') || lower.includes('customer')) {
+      return {
+        empId: 'biz-tania',
+        name: 'Tania',
+        role: 'Customer Success',
+        speech: `Selamat beraktivitas ${callerName}! CS score kepuasan klien akuntansi kita mencapai 98.7% bulan ini, klien sangat terbantu dengan sistem AI kita.`
+      };
+    }
+
+    if (lower.includes('putri') || lower.includes('writer') || lower.includes('sop') || lower.includes('dokumen')) {
+      return {
+        empId: 'biz-putri',
+        name: 'Putri',
+        role: 'Technical Writer',
+        speech: `Halo ${callerName}! Dokumentasi panduan SOP Four-Eyes Principle dan audit trail AI Seventhsoft sudah saya perbarui dengan rapi.`
+      };
+    }
+
     if (lower.includes('bella') || lower.includes('resepsionis') || lower.includes('lobby')) {
       return {
         empId: 'lobby-bella',
@@ -372,6 +498,24 @@ export class TelegramBotService {
         name: 'Bu Ani',
         role: 'Chef Kantin',
         speech: `Kabar baik ${callerName}! Snack sehat dan kue sore hangat sudah siap di kantin, monggo mampir ${callerName}!`
+      };
+    }
+
+    if (lower.includes('siti')) {
+      return {
+        empId: 'staff-siti-jalan',
+        name: 'Siti',
+        role: 'Staff Keuangan',
+        speech: `Halo ${callerName}! Kabar baik, ini saya tadi habis ambil air di dispenser pantry sambil antar map kas kecil ke divisi akuntansi.`
+      };
+    }
+
+    if (lower.includes('mikhael') || lower.includes('lead finance') || lower.includes('approver')) {
+      return {
+        empId: 'lead-finance',
+        name: 'Mikhael',
+        role: 'Finance Lead (Approver GL)',
+        speech: `Halo ${callerName}! Standar Four-Eyes Principle aktif penuh: saya memvalidasi setiap draf sebelum diotorisasi ke General Ledger Seventhsoft.`
       };
     }
 
@@ -407,7 +551,7 @@ export class TelegramBotService {
       empId: 'biz-bagus',
       name: 'Bagus',
       role: 'Enterprise Sales',
-      speech: `Baik ${callerName}! Seluruh 30 staf di Kantor AI Seventhsoft dalam keadaan aktif dan siap membantu. Bapak mau bicara dengan divisi Akuntansi atau Programmer?`
+      speech: `Baik ${callerName}! Seluruh 30 staf di Kantor AI Seventhsoft dalam keadaan aktif dan siap membantu. Bapak mau bicara dengan Doni, Yoga, Kevin, Sarah, atau siapa?`
     };
   }
 
