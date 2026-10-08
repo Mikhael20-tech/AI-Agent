@@ -1,4 +1,5 @@
 import { db } from './database.js';
+import { LLMService } from './llm_service.js';
 
 export class TelegramBotService {
   constructor(eventBus) {
@@ -245,7 +246,7 @@ export class TelegramBotService {
                 continue;
               }
 
-              const reply = this.generateEmployeeResponse(rawText, fromUser);
+              const reply = await this.generateEmployeeResponse(rawText, fromUser);
               if (reply) {
                 console.log(`[TELEGRAM CHAT BALAS] Ke ${chatId} | ${reply.name}: "${reply.speech}"`);
 
@@ -276,7 +277,7 @@ export class TelegramBotService {
     poll();
   }
 
-  generateEmployeeResponse(text, fromUser) {
+  async generateEmployeeResponse(text, fromUser) {
     const lower = text.toLowerCase();
     const callerName = fromUser ? (fromUser.first_name || 'Pak') : 'Pak';
 
@@ -632,7 +633,25 @@ export class TelegramBotService {
       };
     }
 
-    // Default ramah jika menyapa umum
+    // Coba tanyakan ke LLM Cerdas (DeepSeek / Gemini) untuk respon cerdas alami
+    try {
+      const ai = await LLMService.askAI(text, {
+        characterName: 'Bagus',
+        characterRole: 'Enterprise Sales & AI Assistant Seventhsoft'
+      });
+      if (ai && ai.text) {
+        return {
+          empId: 'biz-bagus',
+          name: 'Bagus',
+          role: `AI Assistant (${ai.provider})`,
+          speech: ai.text
+        };
+      }
+    } catch (e) {
+      console.warn('LLM Service fallback triggered:', e.message);
+    }
+
+    // Default ramah jika LLM offline
     return {
       empId: 'biz-bagus',
       name: 'Bagus',
