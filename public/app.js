@@ -579,6 +579,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('employee_selected', (e) => {
     const emp = e.detail;
+    // Highlight di party list
+    document.querySelectorAll('.party-card').forEach(c => c.classList.remove('selected'));
+    const partyCard = document.getElementById(`party-card-${emp.id}`);
+    if (partyCard) {
+      partyCard.classList.add('selected');
+      partyCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     if (!inspector) return;
     const nameEl = document.getElementById('insp-name');
     const roleEl = document.getElementById('insp-role');
@@ -606,4 +614,117 @@ window.addEventListener('DOMContentLoaded', () => {
     const name = document.getElementById('insp-name')?.textContent || 'Pegawai';
     alert(`⚡ Tugas prioritas baru berhasil dikirimkan ke antrean kerja ${name}!`);
   });
+
+  // 6. INISIALISASI PARTY SIDEBAR (30 AGENTS LIST)
+  initPartySidebar();
 });
+
+function initPartySidebar() {
+  const sidebar = document.getElementById('party-sidebar');
+  const listContainer = document.getElementById('party-agent-list');
+  const toggleBtn = document.getElementById('btn-toggle-party');
+  if (!sidebar || !listContainer) return;
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      toggleBtn.textContent = sidebar.classList.contains('collapsed') ? '›' : '‹';
+    });
+  }
+
+  const avatarMap = {
+    'lead-finance': '👑',
+    'agent-entry': '📄',
+    'agent-rekon': '🏦',
+    'agent-pajak': '📊',
+    'staff-maya': '🔍',
+    'staff-rian': '📑',
+    'staff-dimas': '📋',
+    'staff-nadia': '💳',
+    'staff-doni': '💼',
+    'staff-budi-kurir': '🏃‍♂️',
+    'dev-kevin': '💻',
+    'dev-sarah': '👩‍💻',
+    'dev-reza': '🏗️',
+    'dev-aris': '🧠',
+    'dev-bambang': '🗄️',
+    'dev-deni': '🐳',
+    'dev-clara': '🧪',
+    'dev-fikri': '📱',
+    'dev-adit': '🔒',
+    'dev-yoga': '🚶‍♂️',
+    'biz-farhan': '📅',
+    'biz-lina': '🎨',
+    'biz-tania': '🎧',
+    'biz-bagus': '🤝',
+    'biz-putri': '📖',
+    'cafe-koko': '☕',
+    'cafe-buan': '🥪',
+    'lounge-gilang': '🎮',
+    'lobby-bella': '🛎️',
+    'staff-siti-jalan': '🚶‍♀️'
+  };
+
+  const statusMap = {
+    'lead-finance': { text: 'APPROVE', cls: 'posting' },
+    'agent-entry': { text: 'OCR GL', cls: 'active' },
+    'agent-rekon': { text: 'RECON', cls: 'active' },
+    'agent-pajak': { text: 'TAX', cls: 'audit' },
+    'staff-maya': { text: 'AUDIT', cls: 'audit' },
+    'staff-rian': { text: 'E-FAKTUR', cls: 'active' },
+    'staff-dimas': { text: 'VERIF', cls: 'active' },
+    'staff-nadia': { text: 'AR GL', cls: 'active' },
+    'staff-doni': { text: 'PAYROLL', cls: 'active' },
+    'staff-budi-kurir': { text: 'COURIER', cls: 'idle' },
+    'dev-kevin': { text: 'API GL', cls: 'coding' },
+    'dev-sarah': { text: 'REACT', cls: 'coding' },
+    'dev-reza': { text: 'ARCH', cls: 'coding' },
+    'dev-aris': { text: 'LLM OCR', cls: 'coding' },
+    'dev-bambang': { text: 'SQL DB', cls: 'coding' },
+    'dev-deni': { text: 'DOCKER', cls: 'coding' },
+    'dev-clara': { text: 'QA TEST', cls: 'coding' },
+    'dev-fikri': { text: 'MOBILE', cls: 'coding' },
+    'dev-adit': { text: 'SEC 256', cls: 'coding' },
+    'dev-yoga': { text: 'INFRA', cls: 'idle' },
+    'biz-farhan': { text: 'PRODUCT', cls: 'idle' },
+    'biz-lina': { text: 'UI/UX', cls: 'idle' },
+    'biz-tania': { text: 'SUPPORT', cls: 'idle' },
+    'biz-bagus': { text: 'SALES', cls: 'idle' },
+    'biz-putri': { text: 'DOCS', cls: 'idle' },
+    'cafe-koko': { text: 'BARISTA', cls: 'idle' },
+    'cafe-buan': { text: 'CHEF', cls: 'idle' },
+    'lounge-gilang': { text: 'LOUNGE', cls: 'idle' },
+    'lobby-bella': { text: 'LOBBY', cls: 'active' },
+    'staff-siti-jalan': { text: 'PANTRY', cls: 'idle' }
+  };
+
+  const employees = (office3D && office3D.employeeData) ? office3D.employeeData : [];
+  listContainer.innerHTML = '';
+
+  employees.forEach(emp => {
+    const card = document.createElement('div');
+    card.className = 'party-card';
+    card.id = `party-card-${emp.id}`;
+    card.dataset.empId = emp.id;
+
+    const st = statusMap[emp.id] || { text: 'IDLE', cls: 'idle' };
+    const av = avatarMap[emp.id] || '👤';
+
+    card.innerHTML = `
+      <div class="party-card-avatar dept-${emp.dept}">${av}</div>
+      <div class="party-card-info">
+        <div class="party-card-name">${emp.name}</div>
+        <div class="party-card-role">${emp.role}</div>
+      </div>
+      <div class="party-status-pill ${st.cls}" id="party-pill-${emp.id}">${st.text}</div>
+    `;
+
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.party-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      if (office3D) office3D.selectEmployee(emp);
+    });
+
+    listContainer.appendChild(card);
+  });
+}

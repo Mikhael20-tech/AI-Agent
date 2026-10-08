@@ -137,7 +137,9 @@ export class VirtualOffice3D {
     this.buildAccountingZone();
     this.buildTechLabZone();
     this.buildCanteenZone();
+    this.buildMeetingZone();
     this.buildLoungeZone();
+    this.buildDevOpsZone();
     this.buildReceptionZone();
     this.build30Employees();
 
@@ -158,9 +160,9 @@ export class VirtualOffice3D {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
 
-    // Kamera isometrik luas mencakup seluruh 30 pegawai
-    this.camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 1000);
-    this.defaultCameraPos = new THREE.Vector3(48, 44, 52);
+    // Kamera isometrik luas 2.5D persis seperti Agent Office Dashboard di foto
+    this.camera = new THREE.PerspectiveCamera(31, width / height, 0.1, 1000);
+    this.defaultCameraPos = new THREE.Vector3(0, 37, 43);
     this.camera.position.copy(this.defaultCameraPos);
     this.cameraTarget = new THREE.Vector3(0, 2.5, 0);
     this.camera.lookAt(this.cameraTarget);
@@ -189,9 +191,9 @@ export class VirtualOffice3D {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.05;
-      this.controls.maxPolarAngle = Math.PI / 2.12;
-      this.controls.minDistance = 15;
-      this.controls.maxDistance = 110;
+      this.controls.maxPolarAngle = Math.PI / 2.15;
+      this.controls.minDistance = 20;
+      this.controls.maxDistance = 85;
       this.controls.target.copy(this.cameraTarget);
     }
   }
@@ -225,7 +227,7 @@ export class VirtualOffice3D {
 
   buildFloorPlan() {
     // Lantai kayu modern Skandinavia / warm parquet
-    const floorGeo = new THREE.PlaneGeometry(74, 56);
+    const floorGeo = new THREE.PlaneGeometry(74, 54);
     const floorMat = new THREE.MeshLambertMaterial({ color: 0xe5dcd3 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
@@ -237,74 +239,229 @@ export class VirtualOffice3D {
       new THREE.BoxGeometry(74, 15, 0.8),
       new THREE.MeshLambertMaterial({ color: 0xf8fafc })
     );
-    backWall.position.set(0, 7.5, -28);
+    backWall.position.set(0, 7.5, -26);
     backWall.receiveShadow = true;
     this.scene.add(backWall);
 
     // Dinding Kiri Bersih Minimalis
     const sideWall = new THREE.Mesh(
-      new THREE.BoxGeometry(0.8, 15, 56),
+      new THREE.BoxGeometry(0.8, 15, 54),
       new THREE.MeshLambertMaterial({ color: 0xf8fafc })
     );
-    sideWall.position.set(-37, 7.5, 0);
+    sideWall.position.set(-37, 7.5, 1);
     sideWall.receiveShadow = true;
     this.scene.add(sideWall);
 
-    // Jendela Kaca Kantor Modern
-    const winMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc });
-    const winFrameMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    [-28, -14, 0, 14, 28].forEach(wx => {
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(5.2, 6.2, 0.3), winFrameMat);
-      frame.position.set(wx, 9, -27.6);
-      this.scene.add(frame);
+    // Dinding Kanan Bersih Minimalis
+    const rightWall = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 15, 54),
+      new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+    );
+    rightWall.position.set(37, 7.5, 1);
+    rightWall.receiveShadow = true;
+    this.scene.add(rightWall);
 
-      const glass = new THREE.Mesh(new THREE.BoxGeometry(4.8, 5.8, 0.35), winMat);
-      glass.position.set(wx, 9, -27.6);
-      this.scene.add(glass);
+    // Jendela Panorama Gedung Pencakar Langit (City Skyline Panorama)
+    const skyGeo = new THREE.PlaneGeometry(54, 7.2);
+    const skyCanvas = document.createElement('canvas');
+    skyCanvas.width = 1024;
+    skyCanvas.height = 256;
+    const sCtx = skyCanvas.getContext('2d');
+    const skyGrad = sCtx.createLinearGradient(0, 0, 0, 256);
+    skyGrad.addColorStop(0, '#38bdf8');
+    skyGrad.addColorStop(0.7, '#bae6fd');
+    skyGrad.addColorStop(1, '#ffffff');
+    sCtx.fillStyle = skyGrad;
+    sCtx.fillRect(0, 0, 1024, 256);
+
+    // Siluet gedung bertingkat di kejauhan
+    sCtx.fillStyle = '#94a3b8';
+    const bldgs = [[60, 120, 70], [150, 160, 90], [260, 100, 60], [340, 180, 85], [445, 130, 95], [560, 170, 75], [655, 110, 80], [755, 190, 90], [865, 140, 70], [955, 160, 80]];
+    bldgs.forEach(([bx, bh, bw]) => {
+      sCtx.fillRect(bx, 256 - bh, bw, bh);
+      sCtx.fillStyle = '#f1f5f9';
+      for (let gy = 256 - bh + 14; gy < 240; gy += 18) {
+        for (let gx = bx + 8; gx < bx + bw - 8; gx += 14) {
+          sCtx.fillRect(gx, gy, 6, 8);
+        }
+      }
+      sCtx.fillStyle = '#94a3b8';
     });
 
-    // Papan Logo Utama Perusahaan Seventhsoft
-    const logoBoard = new THREE.Mesh(
-      new THREE.BoxGeometry(16, 3.2, 0.4),
+    const skyTex = new THREE.CanvasTexture(skyCanvas);
+    const skyMesh = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: skyTex }));
+    skyMesh.position.set(0, 10, -25.5);
+    this.scene.add(skyMesh);
+
+    // Kosen / Frame Jendela Putih Bersih
+    [-18, 0, 18].forEach(wx => {
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(17.2, 7.4, 0.4),
+        new THREE.MeshLambertMaterial({ color: 0xffffff })
+      );
+      frame.position.set(wx, 10, -25.3);
+      this.scene.add(frame);
+    });
+
+    // Planter Box Tanaman Hijau di ambang jendela
+    const planter = new THREE.Mesh(
+      new THREE.BoxGeometry(54, 0.9, 1.4),
       new THREE.MeshLambertMaterial({ color: 0xffffff })
     );
-    logoBoard.position.set(0, 12.8, -27.5);
-    this.scene.add(logoBoard);
+    planter.position.set(0, 6.0, -24.8);
+    planter.castShadow = true;
+    this.scene.add(planter);
 
-    const logoBar = new THREE.Mesh(
-      new THREE.BoxGeometry(14.8, 1.8, 0.5),
-      new THREE.MeshLambertMaterial({ color: 0xe11d48 })
-    );
-    logoBar.position.set(0, 12.8, -27.4);
-    this.scene.add(logoBar);
+    // Deretan tanaman hias di ambang jendela
+    [-24, -18, -12, -6, 0, 6, 12, 18, 24].forEach(px => {
+      this.furniture.load('pottedPlant', (plant) => {
+        this.furniture.fit(plant, { targetHeight: 2.1 });
+        plant.position.set(px, 6.45, -24.8);
+        this.scene.add(plant);
+      });
+    });
 
-    // Trim list bawah
-    const trim = new THREE.Mesh(
-      new THREE.BoxGeometry(74, 0.35, 0.35),
-      new THREE.MeshLambertMaterial({ color: 0xf43f5e })
+    // Papan Roadmap Seventhsoft di dinding kiri
+    const roadCanvas = document.createElement('canvas');
+    roadCanvas.width = 512;
+    roadCanvas.height = 256;
+    const rCtx = roadCanvas.getContext('2d');
+    rCtx.fillStyle = '#ffffff';
+    rCtx.fillRect(0, 0, 512, 256);
+    rCtx.strokeStyle = '#0284c7';
+    rCtx.lineWidth = 8;
+    rCtx.strokeRect(4, 4, 504, 248);
+    rCtx.fillStyle = '#0f172a';
+    rCtx.font = 'bold 34px sans-serif';
+    rCtx.fillText('📊 SEVENTHSOFT ROADMAP', 24, 50);
+    rCtx.fillStyle = '#0284c7';
+    rCtx.font = '24px sans-serif';
+    rCtx.fillText('✔ AI OCR Data Entry & Masking', 30, 95);
+    rCtx.fillText('✔ Telegram GL Approver', 30, 140);
+    rCtx.fillText('✔ Bank BCA Auto-Recon', 30, 185);
+    rCtx.fillText('🚀 v3.2 AI Virtual Office Live', 30, 230);
+    const roadTex = new THREE.CanvasTexture(roadCanvas);
+    const roadMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(7.5, 3.8),
+      new THREE.MeshBasicMaterial({ map: roadTex })
     );
-    trim.position.set(0, 0.17, 28);
-    this.scene.add(trim);
+    roadMesh.position.set(-20, 11, -25.5);
+    this.scene.add(roadMesh);
+
+    // Neon Sign COFFEE BAR di dinding kanan
+    const neonCanvas = document.createElement('canvas');
+    neonCanvas.width = 512;
+    neonCanvas.height = 128;
+    const nCtx = neonCanvas.getContext('2d');
+    nCtx.font = 'bold 54px sans-serif';
+    nCtx.fillStyle = '#00f2fe';
+    nCtx.textAlign = 'center';
+    nCtx.textBaseline = 'middle';
+    nCtx.shadowColor = '#00f2fe';
+    nCtx.shadowBlur = 20;
+    nCtx.fillText('☕ COFFEE BAR', 256, 64);
+    const neonTex = new THREE.CanvasTexture(neonCanvas);
+    const neonSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(8.5, 2.1),
+      new THREE.MeshBasicMaterial({ map: neonTex, transparent: true })
+    );
+    neonSign.position.set(22, 11.5, -25.5);
+    this.scene.add(neonSign);
+
+    // Keset Welcome Seventhsoft di pintu masuk
+    const welcomeCanvas = document.createElement('canvas');
+    welcomeCanvas.width = 512;
+    welcomeCanvas.height = 160;
+    const wCtx = welcomeCanvas.getContext('2d');
+    wCtx.fillStyle = '#0284c7';
+    wCtx.fillRect(0, 0, 512, 160);
+    wCtx.strokeStyle = '#38bdf8';
+    wCtx.lineWidth = 10;
+    wCtx.strokeRect(5, 5, 502, 150);
+    wCtx.font = 'bold 44px sans-serif';
+    wCtx.fillStyle = '#ffffff';
+    wCtx.textAlign = 'center';
+    wCtx.textBaseline = 'middle';
+    wCtx.fillText('WELCOME SEVENTHSOFT', 256, 80);
+    const welcomeTex = new THREE.CanvasTexture(welcomeCanvas);
+    const welcomeMat = new THREE.Mesh(
+      new THREE.PlaneGeometry(8.5, 2.7),
+      new THREE.MeshBasicMaterial({ map: welcomeTex })
+    );
+    welcomeMat.rotation.x = -Math.PI / 2;
+    welcomeMat.position.set(0, 0.04, 21.5);
+    this.scene.add(welcomeMat);
+
+    // Pilar Masuk Pintu Kaca
+    [-5, 5].forEach(dx => {
+      const pillar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.45, 0.45, 9, 16),
+        new THREE.MeshLambertMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 })
+      );
+      pillar.position.set(dx, 4.5, 23.5);
+      this.scene.add(pillar);
+    });
+  }
+
+  createFloorBadge(x, z, label, iconText) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    // Rounded pill
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 6;
+    
+    const r = 50;
+    ctx.beginPath();
+    ctx.moveTo(r, 10);
+    ctx.lineTo(512 - r, 10);
+    ctx.quadraticCurveTo(512 - 10, 10, 512 - 10, r);
+    ctx.lineTo(512 - 10, 128 - r);
+    ctx.quadraticCurveTo(512 - 10, 128 - 10, 512 - r, 128 - 10);
+    ctx.lineTo(r, 128 - 10);
+    ctx.quadraticCurveTo(10, 128 - 10, 10, 128 - r);
+    ctx.lineTo(10, r);
+    ctx.quadraticCurveTo(10, 10, r, 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Text with icon
+    ctx.font = 'bold 38px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#1e293b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${iconText} ${label}`, 256, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const geo = new THREE.PlaneGeometry(8.5, 2.1);
+    const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, polygonOffset: true, polygonOffsetFactor: -1 });
+    const badgeMesh = new THREE.Mesh(geo, mat);
+    badgeMesh.rotation.x = -Math.PI / 2;
+    badgeMesh.position.set(x, 0.05, z);
+    this.scene.add(badgeMesh);
+    return badgeMesh;
   }
 
   // =========================================================================
-  // ZONA 1: WING AKUNTANSI & KEUANGAN (Kiri)
+  // ZONA 1: FOUNDER & LEAD FINANCE (Kiri Atas)
   // =========================================================================
   buildAccountingZone() {
     const carpet = new THREE.Mesh(
-      new THREE.PlaneGeometry(32, 28),
+      new THREE.PlaneGeometry(20, 16),
       new THREE.MeshLambertMaterial({ color: 0xfce7f3 })
     );
     carpet.rotation.x = -Math.PI / 2;
-    carpet.position.set(-20, 0.02, -5);
+    carpet.position.set(-22, 0.02, -14);
     carpet.receiveShadow = true;
     this.scene.add(carpet);
 
-    // Signboard Zona Akuntansi
-    this.createZoneSign(-20, 11, -27.5, 'DIVISI KEUANGAN & AUDIT', 0xd946ef);
-
-    // Lemari Arsip Berkas Berjejer (Bookcase Closed dari Claw3D)
-    [-19, -13].forEach(z => {
+    // Lemari Arsip Berkas Berjejer
+    [-18, -12].forEach(z => {
       this.furniture.load('bookcaseClosed', (bookcase) => {
         this.furniture.fit(bookcase, { targetHeight: 7.8 });
         bookcase.position.set(-35.5, 0, z);
@@ -318,87 +475,58 @@ export class VirtualOffice3D {
       new THREE.BoxGeometry(2.6, 3.5, 2.6),
       new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 })
     );
-    safe.position.set(-35.2, 1.75, -7);
+    safe.position.set(-35.2, 1.75, -6.5);
     safe.castShadow = true;
     this.scene.add(safe);
 
-    this.createPottedPlant(-35, 7);
-    this.createPottedPlant(-5, -18);
+    this.createPottedPlant(-34, -7);
+    this.createFloorBadge(-20, -7.5, 'FOUNDER / APPROVER GL', '👑');
   }
 
   // =========================================================================
-  // ZONA 2: TECH LAB / SOFTWARE ENGINEERING & IT (Tengah)
+  // ZONA 2: TECH LAB / SOFTWARE ENGINEERING & IT (Tengah Atas)
   // =========================================================================
   buildTechLabZone() {
     const techCarpet = new THREE.Mesh(
-      new THREE.PlaneGeometry(30, 24),
+      new THREE.PlaneGeometry(26, 16),
       new THREE.MeshLambertMaterial({ color: 0xbae6fd })
     );
     techCarpet.rotation.x = -Math.PI / 2;
-    techCarpet.position.set(0, 0.02, -15);
+    techCarpet.position.set(0, 0.02, -14);
     techCarpet.receiveShadow = true;
     this.scene.add(techCarpet);
 
-    this.createZoneSign(0, 11, -27.5, 'SEVENTHSOFT TECH & AI LAB', 0x0284c7);
-
-    // Server Racks dengan Lampu Indikator Kedip
-    this.serverRacks = [];
-    [-4.5, -1.5, 1.5, 4.5].forEach(sx => {
-      const rack = new THREE.Mesh(
-        new THREE.BoxGeometry(2.2, 8.2, 2.2),
-        new THREE.MeshLambertMaterial({ color: 0x0f172a })
-      );
-      rack.position.set(sx, 4.1, -25.5);
-      rack.castShadow = true;
-      this.scene.add(rack);
-
-      // LED strip server
-      const led = new THREE.Mesh(
-        new THREE.BoxGeometry(1.8, 0.15, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0x22c55e })
-      );
-      led.position.set(sx, 6.5, -24.3);
-      this.scene.add(led);
-      this.serverRacks.push(led);
-    });
-
-    // Whiteboard Arsitektur Sistem
-    const board = new THREE.Mesh(
-      new THREE.BoxGeometry(8, 4.2, 0.2),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    board.position.set(-11, 5.5, -27.5);
-    this.scene.add(board);
+    this.createPottedPlant(-12, -7.5);
+    this.createPottedPlant(12, -7.5);
+    this.createFloorBadge(0, -7.5, 'CODING & GENERAL LEDGER', '</>');
   }
 
   // =========================================================================
-  // ZONA 3: KANTIN, CAFE & PANTRY (Kanan Belakang)
+  // ZONA 3: KANTIN, CAFE & PANTRY (Kanan Atas)
   // =========================================================================
   buildCanteenZone() {
     const canteenFloor = new THREE.Mesh(
-      new THREE.PlaneGeometry(28, 22),
+      new THREE.PlaneGeometry(20, 16),
       new THREE.MeshLambertMaterial({ color: 0xd1fae5 })
     );
     canteenFloor.rotation.x = -Math.PI / 2;
-    canteenFloor.position.set(22, 0.025, -16);
+    canteenFloor.position.set(22, 0.025, -14);
     canteenFloor.receiveShadow = true;
     this.scene.add(canteenFloor);
-
-    this.createZoneSign(22, 11, -27.5, 'KANTIN & COFFEE BAR', 0x059669);
 
     // Counter Bar Espresso
     const bar = new THREE.Mesh(
       new THREE.BoxGeometry(14, 2.8, 2.6),
       new THREE.MeshLambertMaterial({ color: 0xffffff })
     );
-    bar.position.set(22, 1.4, -24.5);
+    bar.position.set(22, 1.4, -14);
     bar.castShadow = true;
     this.scene.add(bar);
 
     // Mesin Kopi Espresso Otentik Claw3D
     this.furniture.load('kitchenCoffeeMachine', (espresso) => {
       this.furniture.fit(espresso, { targetHeight: 1.5 });
-      espresso.position.set(19, 2.8, -24.5);
+      espresso.position.set(19, 2.8, -14);
       espresso.rotation.y = 0;
       this.scene.add(espresso);
     });
@@ -406,37 +534,88 @@ export class VirtualOffice3D {
     // Kulkas Kantin Stainless Steel Claw3D
     this.furniture.load('kitchenFridgeSmall', (fridge) => {
       this.furniture.fit(fridge, { targetHeight: 7.2 });
-      fridge.position.set(33.5, 0, -24.5);
+      fridge.position.set(31.5, 0, -14);
       fridge.rotation.y = 0;
       this.scene.add(fridge);
     });
 
-    // Meja Bundar & Kursi Modern Kantin
-    this.createDiningTable(17, -12);
-    this.createDiningTable(27, -12);
-    this.createWaterDispenser(34, -7);
+    this.createWaterDispenser(31.5, -8);
+    this.createFloorBadge(22, -7.5, 'COFFEE BAR', '☕');
   }
 
   // =========================================================================
-  // ZONA 4: LOUNGE & RELAXATION (Kanan Depan)
+  // ZONA 4: RUANG MEETING (Kiri Bawah)
+  // =========================================================================
+  buildMeetingZone() {
+    const meetingFloor = new THREE.Mesh(
+      new THREE.PlaneGeometry(20, 18),
+      new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
+    );
+    meetingFloor.rotation.x = -Math.PI / 2;
+    meetingFloor.position.set(-22, 0.02, 7);
+    meetingFloor.receiveShadow = true;
+    this.scene.add(meetingFloor);
+
+    // Meja Konferensi Besar
+    const tableTop = new THREE.Mesh(
+      new THREE.BoxGeometry(11, 0.3, 5.5),
+      new THREE.MeshLambertMaterial({ color: 0xffffff })
+    );
+    tableTop.position.set(-22, 2.3, 7);
+    tableTop.castShadow = true;
+    this.scene.add(tableTop);
+
+    const legMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    [[-26.5, 4.8], [-17.5, 4.8], [-26.5, 9.2], [-17.5, 9.2]].forEach(([lx, lz]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.3, 8), legMat);
+      leg.position.set(lx, 1.15, lz);
+      this.scene.add(leg);
+    });
+
+    // Kursi Rapat di sekeliling meja
+    const chairPos = [
+      [-26, 4.2, 0], [-22, 4.2, 0], [-18, 4.2, 0],
+      [-26, 9.8, Math.PI], [-22, 9.8, Math.PI], [-18, 9.8, Math.PI]
+    ];
+    chairPos.forEach(([cx, cz, crot]) => {
+      this.furniture.load('chairModernCushion', (chair) => {
+        this.furniture.fit(chair, { targetHeight: 1.8 });
+        chair.position.set(cx, 0, cz);
+        chair.rotation.y = crot;
+        this.scene.add(chair);
+      });
+    });
+
+    // Whiteboard Meeting SOP
+    const wb = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 4.5, 7.5),
+      new THREE.MeshLambertMaterial({ color: 0xffffff })
+    );
+    wb.position.set(-33, 4.5, 7);
+    this.scene.add(wb);
+
+    this.createPottedPlant(-12, 7);
+    this.createFloorBadge(-22, 14.5, 'MEETING ROOM', '💼');
+  }
+
+  // =========================================================================
+  // ZONA 5: LOUNGE AREA & RELAXATION (Tengah Bawah)
   // =========================================================================
   buildLoungeZone() {
     const loungeFloor = new THREE.Mesh(
-      new THREE.PlaneGeometry(28, 24),
+      new THREE.PlaneGeometry(18, 16),
       new THREE.MeshLambertMaterial({ color: 0xf3e8ff })
     );
     loungeFloor.rotation.x = -Math.PI / 2;
-    loungeFloor.position.set(22, 0.02, 14);
+    loungeFloor.position.set(0, 0.02, 5);
     loungeFloor.receiveShadow = true;
     this.scene.add(loungeFloor);
 
-    this.createZoneSign(22, 10, 27.5, 'LOUNGE & GAMING AREA', 0x9333ea, true);
-
-    // Sofa Mewah Claw3D
+    // Sofa Mewah Claw3D Ungu
     this.furniture.load('loungeSofa', (sofa) => {
       this.furniture.fit(sofa, { targetHeight: 2.7 });
-      sofa.position.set(20, 0, 13);
-      sofa.rotation.y = Math.PI;
+      sofa.position.set(0, 0, 4);
+      sofa.rotation.y = 0;
       sofa.traverse(c => {
         if (c.isMesh && c.material) {
           c.material.color.lerp(new THREE.Color(0x9333ea), 0.7);
@@ -445,87 +624,124 @@ export class VirtualOffice3D {
       this.scene.add(sofa);
     });
 
-    // Kursi Santai Lounge Armchair Claw3D
-    this.furniture.load('loungeDesignChair', (chair) => {
-      this.furniture.fit(chair, { targetHeight: 2.3 });
-      chair.position.set(26.5, 0, 16.5);
-      chair.rotation.y = -Math.PI / 2;
-      chair.traverse(c => {
-        if (c.isMesh && c.material) {
-          c.material.color.lerp(new THREE.Color(0xa855f7), 0.7);
-        }
+    // Kursi Santai Kuning Aksen
+    [-4.5, 4.5].forEach((ax, i) => {
+      this.furniture.load('loungeDesignChair', (chair) => {
+        this.furniture.fit(chair, { targetHeight: 2.3 });
+        chair.position.set(ax, 0, 4);
+        chair.rotation.y = i === 0 ? 0.3 : -0.3;
+        chair.traverse(c => {
+          if (c.isMesh && c.material) {
+            c.material.color.lerp(new THREE.Color(0xfacc15), 0.8);
+          }
+        });
+        this.scene.add(chair);
       });
-      this.scene.add(chair);
     });
 
     // Meja Kopi Elegan Claw3D
     this.furniture.load('tableCoffee', (coffeeTable) => {
       this.furniture.fit(coffeeTable, { targetHeight: 1.1 });
-      coffeeTable.position.set(20, 0, 18);
+      coffeeTable.position.set(0, 0, 6.8);
       this.scene.add(coffeeTable);
     });
 
-    // Lampu Lantai Modern Claw3D
-    this.furniture.load('lampRoundFloor', (lamp) => {
-      this.furniture.fit(lamp, { targetHeight: 6.2 });
-      lamp.position.set(33, 0, 22);
-      this.scene.add(lamp);
-    });
-
-    // Beanbags
-    this.createBeanbag(13, 15, 0xf97316);
-    this.createBeanbag(13, 20, 0x06b6d4);
-
     // Smart TV Layar Lebar
     const tv = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 4.5, 8.5),
+      new THREE.BoxGeometry(0.2, 3.8, 6.5),
       new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
     );
-    tv.position.set(36.2, 6.5, 15);
+    tv.position.set(8.5, 4.5, 5);
+    tv.rotation.y = -Math.PI / 6;
     this.scene.add(tv);
 
-    this.createPottedPlant(34, 4);
-    this.createPottedPlant(10, 24);
+    this.createFloorBadge(0, 10.5, 'LOUNGE AREA', '🛋️');
   }
 
   // =========================================================================
-  // ZONA 5: LOBBY & RECEPTION (Tengah Depan)
+  // ZONA 6: DEVOPS & IT SERVER LAB (Kanan Bawah)
+  // =========================================================================
+  buildDevOpsZone() {
+    const devopsFloor = new THREE.Mesh(
+      new THREE.PlaneGeometry(20, 18),
+      new THREE.MeshLambertMaterial({ color: 0x0f172a })
+    );
+    devopsFloor.rotation.x = -Math.PI / 2;
+    devopsFloor.position.set(22, 0.02, 7);
+    devopsFloor.receiveShadow = true;
+    this.scene.add(devopsFloor);
+
+    // Server Racks dengan Lampu Indikator Kedip
+    this.serverRacks = [];
+    [18, 21, 24, 27].forEach(sx => {
+      const rack = new THREE.Mesh(
+        new THREE.BoxGeometry(2.0, 7.8, 2.0),
+        new THREE.MeshLambertMaterial({ color: 0x1e293b })
+      );
+      rack.position.set(sx, 3.9, 1);
+      rack.castShadow = true;
+      this.scene.add(rack);
+
+      const led = new THREE.Mesh(
+        new THREE.BoxGeometry(1.6, 0.15, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0x22c55e })
+      );
+      led.position.set(sx, 5.8, 2.05);
+      this.scene.add(led);
+      this.serverRacks.push(led);
+    });
+
+    // Big Monitoring Screen Dashboard
+    const monScreen = new THREE.Mesh(
+      new THREE.BoxGeometry(7.5, 4.2, 0.2),
+      new THREE.MeshBasicMaterial({ color: 0x0284c7 })
+    );
+    monScreen.position.set(23, 5.5, 7.5);
+    monScreen.rotation.y = -Math.PI / 6;
+    this.scene.add(monScreen);
+
+    this.createFloorBadge(22, 14.5, 'DEVOPS & INFRA', '⚙️');
+  }
+
+  // =========================================================================
+  // ZONA 7: ENTRANCE & RECEPTION (Depan Tengah)
   // =========================================================================
   buildReceptionZone() {
     const lobbyFloor = new THREE.Mesh(
-      new THREE.PlaneGeometry(24, 18),
+      new THREE.PlaneGeometry(18, 12),
       new THREE.MeshLambertMaterial({ color: 0xfef3c7 })
     );
     lobbyFloor.rotation.x = -Math.PI / 2;
-    lobbyFloor.position.set(-3, 0.02, 17);
+    lobbyFloor.position.set(0, 0.02, 18);
     lobbyFloor.receiveShadow = true;
     this.scene.add(lobbyFloor);
 
     // Meja Resepsionis Lengkung Elegan
     const desk = new THREE.Mesh(
-      new THREE.BoxGeometry(10, 2.6, 2.4),
+      new THREE.BoxGeometry(8.5, 2.6, 2.2),
       new THREE.MeshLambertMaterial({ color: 0xffffff })
     );
-    desk.position.set(-3, 1.3, 13);
+    desk.position.set(0, 1.3, 16);
     desk.castShadow = true;
     this.scene.add(desk);
 
     const bannerLogo = new THREE.Mesh(
-      new THREE.BoxGeometry(6, 1.0, 0.1),
+      new THREE.BoxGeometry(5.5, 1.0, 0.1),
       new THREE.MeshLambertMaterial({ color: 0xe11d48 })
     );
-    bannerLogo.position.set(-3, 1.3, 14.25);
+    bannerLogo.position.set(0, 1.3, 17.15);
     this.scene.add(bannerLogo);
 
     this.furniture.load('chairModernCushion', (chair) => {
       this.furniture.fit(chair, { targetHeight: 1.9 });
-      chair.position.set(-3, 0, 11.5);
+      chair.position.set(0, 0, 14.5);
       chair.rotation.y = 0;
       this.scene.add(chair);
     });
 
-    this.createPottedPlant(-10, 13);
-    this.createPottedPlant(4, 13);
+    this.createPottedPlant(-6, 16);
+    this.createPottedPlant(6, 16);
+    this.createFloorBadge(0, 13.5, 'RECEPTION & LOBBY', '🛎️');
   }
 
   createZoneSign(x, y, z, text, color, rotate180 = false) {
@@ -618,20 +834,20 @@ export class VirtualOffice3D {
     const deskGroup = new THREE.Group();
     deskGroup.position.set(x, 0, z);
 
-    // Meja Claw3D (deskCorner untuk Executive Lead, desk standar untuk staf)
+    // Meja Claw3D di depan pegawai (z = +1.15)
     const deskModel = isLead ? 'deskCorner' : 'desk';
     this.furniture.load(deskModel, (deskInst) => {
       this.furniture.fit(deskInst, { targetHeight: 2.35 });
-      deskInst.position.set(0, 0, -1.15);
-      deskInst.rotation.y = isLead ? -Math.PI / 2 : Math.PI;
+      deskInst.position.set(0, 0, 1.15);
+      deskInst.rotation.y = 0;
       deskGroup.add(deskInst);
     });
 
-    // Kursi Kerja Putar Ergonomis Claw3D (chairDesk)
+    // Kursi Kerja Putar Ergonomis Claw3D (chairDesk) di belakang pegawai (z = -0.15)
     this.furniture.load('chairDesk', (chairInst) => {
       this.furniture.fit(chairInst, { targetHeight: 1.95 });
-      chairInst.position.set(0, 0, 0.2);
-      chairInst.rotation.y = 0;
+      chairInst.position.set(0, 0, -0.15);
+      chairInst.rotation.y = Math.PI;
       chairInst.traverse(c => {
         if (c.isMesh && c.material) {
           c.material.color.lerp(new THREE.Color(chairColor), 0.7);
@@ -647,8 +863,8 @@ export class VirtualOffice3D {
       [-0.95, 0.95].forEach((mx, i) => {
         this.furniture.load('computerScreen', (screenInst) => {
           this.furniture.fit(screenInst, { targetHeight: 1.35 });
-          screenInst.position.set(mx, 2.35, -1.05);
-          screenInst.rotation.y = mx < 0 ? 0.16 : -0.16;
+          screenInst.position.set(mx, 2.35, 1.1);
+          screenInst.rotation.y = Math.PI + (mx < 0 ? -0.16 : 0.16);
           deskGroup.add(screenInst);
         });
 
@@ -660,17 +876,17 @@ export class VirtualOffice3D {
             side: THREE.DoubleSide
           })
         );
-        glow.position.set(mx, 3.12, -0.98);
+        glow.position.set(mx, 3.12, 1.18);
         glow.rotation.y = mx < 0 ? 0.16 : -0.16;
         deskGroup.add(glow);
         screens.push(glow);
       });
     } else {
-      // Single Screen untuk Akuntansi & Product
+      // Single Screen untuk Akuntansi & Staf
       this.furniture.load('computerScreen', (screenInst) => {
         this.furniture.fit(screenInst, { targetHeight: 1.35 });
-        screenInst.position.set(0, 2.35, -1.05);
-        screenInst.rotation.y = 0;
+        screenInst.position.set(0, 2.35, 1.1);
+        screenInst.rotation.y = Math.PI;
         deskGroup.add(screenInst);
       });
 
@@ -681,7 +897,7 @@ export class VirtualOffice3D {
           side: THREE.DoubleSide
         })
       );
-      glow.position.set(0, 3.12, -0.98);
+      glow.position.set(0, 3.12, 1.18);
       deskGroup.add(glow);
       screens.push(glow);
     }
@@ -757,48 +973,56 @@ export class VirtualOffice3D {
   }
 
   // =========================================================================
-  // 30 PEGAWAI LENGKAP: AKUNTANSI, PROGRAMMER, PRODUCT & PANTRY
+  // 30 PEGAWAI LENGKAP: DISTRIBUSI PRESISI 7 ZONA 2.5D ISOMETRIC
   // =========================================================================
   build30Employees() {
     const employeeData = [
-      // --- DIVISI 1: AKUNTANSI & KEUANGAN (Sayap Kiri Luas - 10 Orang) ---
-      { id: 'lead-finance', name: 'Mikhael', role: 'Finance Lead (Approver GL)', dept: 'finance', x: -18, z: -21, anchorY: 6.8, chairColor: 0x7c3aed, shirt: 0x6d28d9, hair: 0x18181b, task: '🛡️ Otorisasi final posting GL Seventhsoft via Telegram', isLead: true },
-      { id: 'agent-entry', name: 'agen-entry', role: 'AI Data Entry & OCR', dept: 'finance', x: -30, z: -21, anchorY: 6.4, chairColor: 0xec4899, shirt: 0x059669, hair: 0x451a03, task: '📄 Ekstraksi faktur & Masking PDP (Modul Beli)' },
-      { id: 'agent-rekon', name: 'agen-rekon', role: 'AI Rekonsiliasi Bank', dept: 'finance', x: -30, z: -13, anchorY: 5.7, chairColor: 0x3b82f6, shirt: 0x0284c7, hair: 0x3b1e08, task: '🏦 Pencocokan e-statement BCA vs Kas Seventhsoft' },
-      { id: 'agent-pajak', name: 'agen-pajak', role: 'AI Pajak & Margin', dept: 'finance', x: -18, z: -13, anchorY: 5.4, chairColor: 0xf59e0b, shirt: 0xd97706, hair: 0x172554, task: '📊 Proyeksi PPN 11% & Deteksi anomali HPP' },
-      { id: 'staff-maya', name: 'Maya', role: 'Senior Auditor', dept: 'finance', x: -30, z: -5, anchorY: 5.0, chairColor: 0x14b8a6, shirt: 0x0d9488, hair: 0x7c2d12, task: '🔍 Tinjau audit log checksum SHA-256' },
-      { id: 'staff-rian', name: 'Rian', role: 'Staf Pajak e-Faktur', dept: 'finance', x: -18, z: -5, anchorY: 4.7, chairColor: 0x6366f1, shirt: 0x4f46e5, hair: 0x18181b, task: '📑 Rekapitulasi SPT Masa & PPh 23' },
-      { id: 'staff-dimas', name: 'Dimas', role: 'Junior Accountant', dept: 'finance', x: -30, z: 3, anchorY: 4.8, chairColor: 0x06b6d4, shirt: 0x0891b2, hair: 0x27272a, task: '📋 Verifikasi fisik surat jalan & invoice vendor' },
-      { id: 'staff-nadia', name: 'Nadia', role: 'Billing & AR Specialist', dept: 'finance', x: -18, z: 3, anchorY: 4.5, chairColor: 0xf43f5e, shirt: 0xe11d48, hair: 0x451a03, task: '💳 Monitor piutang dagang jatuh tempo' },
-      { id: 'staff-doni', name: 'Doni', role: 'Payroll Specialist', dept: 'finance', x: -24, z: 10, anchorY: 4.5, chairColor: 0x8b5cf6, shirt: 0x7c3aed, hair: 0x1c1917, task: '💼 Perhitungan slip gaji & potongan PPh 21' },
+      // --- ZONA 1: FOUNDER / APPROVER GL (Kiri Atas) ---
+      { id: 'lead-finance', name: 'Mikhael', role: 'Finance Lead (Approver GL)', dept: 'finance', x: -22, z: -16, anchorY: 6.8, chairColor: 0x7c3aed, shirt: 0x6d28d9, hair: 0x18181b, task: '🛡️ Otorisasi final posting GL Seventhsoft via Telegram', isLead: true },
+      { id: 'agent-entry', name: 'agen-entry', role: 'AI Data Entry & OCR', dept: 'finance', x: -28, z: -16, anchorY: 6.8, chairColor: 0xec4899, shirt: 0x059669, hair: 0x451a03, task: '📄 Ekstraksi faktur & Masking PDP (Modul Beli)' },
+      { id: 'agent-rekon', name: 'agen-rekon', role: 'AI Rekonsiliasi Bank', dept: 'finance', x: -16, z: -16, anchorY: 6.8, chairColor: 0x3b82f6, shirt: 0x0284c7, hair: 0x3b1e08, task: '🏦 Pencocokan e-statement BCA vs Kas Seventhsoft' },
+      { id: 'agent-pajak', name: 'agen-pajak', role: 'AI Pajak & Margin', dept: 'finance', x: -22, z: -10, anchorY: 5.6, chairColor: 0xf59e0b, shirt: 0xd97706, hair: 0x172554, task: '📊 Proyeksi PPN 11% & Deteksi anomali HPP' },
       { id: 'staff-budi-kurir', name: 'Budi', role: 'Kurir Berkas Akuntansi', dept: 'finance', anchorY: 5.6, isWalker: true, route: 'finance', shirt: 0xf59e0b, task: '🚶 Antar map invoice dari meja Entry ke meja Lead' },
 
-      // --- DIVISI 2: PROGRAMMER & SOFTWARE ENGINEERING (Tech Lab Tengah - 10 Orang) ---
-      { id: 'dev-kevin', name: 'Kevin', role: 'Lead Backend Engineer', dept: 'tech', x: -7, z: -20, anchorY: 6.8, isDev: true, chairColor: 0x10b981, shirt: 0x047857, hair: 0x18181b, task: '💻 Maintain REST API Seventhsoft & Webhook n8n' },
-      { id: 'dev-sarah', name: 'Sarah', role: 'Frontend React Engineer', dept: 'tech', x: 1, z: -20, anchorY: 7.1, isDev: true, chairColor: 0x06b6d4, shirt: 0x0284c7, hair: 0x78350f, task: '⚛️ Build UI Virtual Office & Live Dashboard' },
-      { id: 'dev-reza', name: 'Reza', role: 'System Architect', dept: 'tech', x: 9, z: -20, anchorY: 6.8, isDev: true, chairColor: 0x8b5cf6, shirt: 0x6d28d9, hair: 0x0f172a, task: '🏗️ Arsitektur High-Availability Microservices' },
-      { id: 'dev-aris', name: 'Aris', role: 'AI & LLM Engineer', dept: 'tech', x: -7, z: -12, anchorY: 5.8, isDev: true, chairColor: 0xf43f5e, shirt: 0xbe123c, hair: 0x27272a, task: '🧠 Fine-tuning Model OCR & Sanitasi Data PDP' },
-      { id: 'dev-bambang', name: 'Bambang', role: 'Database Administrator', dept: 'tech', x: 1, z: -12, anchorY: 5.5, isDev: true, chairColor: 0x3b82f6, shirt: 0x1d4ed8, hair: 0x1c1917, task: '🗄️ Optimasi query General Ledger & Indexing DB' },
-      { id: 'dev-deni', name: 'Deni', role: 'DevOps & Cloud Engineer', dept: 'tech', x: 9, z: -12, anchorY: 5.8, isDev: true, chairColor: 0x14b8a6, shirt: 0x0f766e, hair: 0x18181b, task: '🐳 Monitoring Docker, Caddy HTTPS, & VPS' },
-      { id: 'dev-clara', name: 'Clara', role: 'QA & Test Automation', dept: 'tech', x: -7, z: -4, anchorY: 4.8, isDev: true, chairColor: 0xec4899, shirt: 0xdb2777, hair: 0x451a03, task: '🧪 Automasi testing siklus posting transaksi' },
-      { id: 'dev-fikri', name: 'Fikri', role: 'Mobile App Developer', dept: 'tech', x: 1, z: -4, anchorY: 4.5, isDev: true, chairColor: 0xeab308, shirt: 0xca8a04, hair: 0x292524, task: '📱 Sinkronisasi Mobile App Seventhsoft' },
-      { id: 'dev-adit', name: 'Adit', role: 'Cybersecurity Engineer', dept: 'tech', x: 9, z: -4, anchorY: 4.8, isDev: true, chairColor: 0x64748b, shirt: 0x334155, hair: 0x0f172a, task: '🔒 Penetrasi testing & Verifikasi hash SHA-256' },
+      // --- ZONA 2: CODING & GENERAL LEDGER (Tengah Atas) ---
+      { id: 'dev-kevin', name: 'Kevin', role: 'Lead Backend Engineer', dept: 'tech', x: -8, z: -16, anchorY: 6.8, isDev: true, chairColor: 0x10b981, shirt: 0x047857, hair: 0x18181b, task: '💻 Maintain REST API Seventhsoft & Webhook n8n' },
+      { id: 'dev-sarah', name: 'Sarah', role: 'Frontend React Engineer', dept: 'tech', x: 0, z: -16, anchorY: 6.8, isDev: true, chairColor: 0x06b6d4, shirt: 0x0284c7, hair: 0x78350f, task: '⚛️ Build UI Virtual Office & Live Dashboard' },
+      { id: 'dev-reza', name: 'Reza', role: 'System Architect', dept: 'tech', x: 8, z: -16, anchorY: 6.8, isDev: true, chairColor: 0x8b5cf6, shirt: 0x6d28d9, hair: 0x0f172a, task: '🏗️ Arsitektur High-Availability Microservices' },
+      { id: 'dev-aris', name: 'Aris', role: 'AI & LLM Engineer', dept: 'tech', x: -8, z: -10, anchorY: 5.6, isDev: true, chairColor: 0xf43f5e, shirt: 0xbe123c, hair: 0x27272a, task: '🧠 Fine-tuning Model OCR & Sanitasi Data PDP' },
+      { id: 'dev-bambang', name: 'Bambang', role: 'Database Administrator', dept: 'tech', x: 0, z: -10, anchorY: 5.6, isDev: true, chairColor: 0x3b82f6, shirt: 0x1d4ed8, hair: 0x1c1917, task: '🗄️ Optimasi query General Ledger & Indexing DB' },
+      { id: 'dev-fikri', name: 'Fikri', role: 'Mobile App Developer', dept: 'tech', x: 8, z: -10, anchorY: 5.6, isDev: true, chairColor: 0xeab308, shirt: 0xca8a04, hair: 0x292524, task: '📱 Sinkronisasi Mobile App Seventhsoft' },
+
+      // --- ZONA 3: COFFEE BAR & PANTRY (Kanan Atas) ---
+      { id: 'cafe-koko', name: 'Koko', role: 'Barista Kantor', dept: 'lounge', x: 18, z: -15, anchorY: 6.5, isStanding: true, shirt: 0x78350f, hair: 0x18181b, task: '☕ Seduh kopi espresso untuk programmer & akuntan' },
+      { id: 'cafe-buan', name: 'Bu Ani', role: 'Chef Kantin', dept: 'lounge', x: 26, z: -15, anchorY: 6.5, isStanding: true, shirt: 0xe11d48, hair: 0x451a03, task: '🥪 Siapkan snack sehat & kue sore kantor' },
+      { id: 'staff-siti-jalan', name: 'Siti', role: 'Staff Keuangan', dept: 'lounge', anchorY: 5.4, isWalker: true, route: 'canteen', shirt: 0xf43f5e, task: '🚶 OTW ambil air galon di dispenser pantry' },
+
+      // --- ZONA 4: RUANG MEETING (Kiri Bawah) ---
+      { id: 'staff-maya', name: 'Maya', role: 'Senior Auditor', dept: 'finance', x: -26, z: 4.2, anchorY: 5.2, isMeeting: true, chairColor: 0x14b8a6, shirt: 0x0d9488, hair: 0x7c2d12, task: '🔍 Tinjau audit log checksum SHA-256' },
+      { id: 'staff-rian', name: 'Rian', role: 'Staf Pajak e-Faktur', dept: 'finance', x: -22, z: 4.2, anchorY: 5.2, isMeeting: true, chairColor: 0x6366f1, shirt: 0x4f46e5, hair: 0x18181b, task: '📑 Rekapitulasi SPT Masa & PPh 23' },
+      { id: 'staff-dimas', name: 'Dimas', role: 'Junior Accountant', dept: 'finance', x: -18, z: 4.2, anchorY: 5.2, isMeeting: true, chairColor: 0x06b6d4, shirt: 0x0891b2, hair: 0x27272a, task: '📋 Verifikasi fisik surat jalan & invoice vendor' },
+      { id: 'staff-nadia', name: 'Nadia', role: 'Billing & AR Specialist', dept: 'finance', x: -26, z: 9.8, anchorY: 4.8, isMeeting: true, chairColor: 0xf43f5e, shirt: 0xe11d48, hair: 0x451a03, task: '💳 Monitor piutang dagang jatuh tempo' },
+      { id: 'staff-doni', name: 'Doni', role: 'Payroll Specialist', dept: 'finance', x: -18, z: 9.8, anchorY: 4.8, isMeeting: true, chairColor: 0x8b5cf6, shirt: 0x7c3aed, hair: 0x1c1917, task: '💼 Perhitungan slip gaji & potongan PPh 21' },
+
+      // --- ZONA 5: LOUNGE AREA (Tengah Bawah) ---
+      { id: 'lounge-gilang', name: 'Gilang', role: 'Staff Istirahat Lounge', dept: 'lounge', x: 0, z: 4, anchorY: 4.8, isSittingSofa: true, shirt: 0x10b981, hair: 0x27272a, task: '🎮 Main game konsol di smart TV lounge' },
+      { id: 'biz-bagus', name: 'Bagus', role: 'Enterprise Sales', dept: 'product', x: -4.5, z: 4, anchorY: 4.8, isSittingSofa: true, shirt: 0x1d4ed8, hair: 0x1c1917, task: '🤝 Demo otomatisasi AI ke klien korporasi' },
+      { id: 'biz-putri', name: 'Putri', role: 'Technical Writer', dept: 'product', x: 4.5, z: 4, anchorY: 4.8, isSittingSofa: true, shirt: 0xd97706, hair: 0x451a03, task: '📖 Update dokumentasi SOP Four-Eyes Principle' },
+      { id: 'biz-farhan', name: 'Farhan', role: 'Product Manager', dept: 'product', x: -2.5, z: 8.5, anchorY: 4.6, isSittingSofa: true, shirt: 0x7e22ce, hair: 0x18181b, task: '📅 Perencanaan rilis fitur Seventhsoft v3.2' },
+      { id: 'biz-lina', name: 'Lina', role: 'UI/UX Designer', dept: 'product', x: 2.5, z: 8.5, anchorY: 4.6, isSittingSofa: true, shirt: 0xf43f5e, hair: 0x7c2d12, task: '🎨 Desain prototipe navigasi modul gudang' },
+      { id: 'biz-tania', name: 'Tania', role: 'Customer Success', dept: 'product', x: -4.5, z: 8.5, anchorY: 4.6, isSittingSofa: true, shirt: 0x059669, hair: 0x292524, task: '🎧 Pandu klien akuntan baru via ticketing' },
+
+      // --- ZONA 6: DEVOPS & INFRA (Kanan Bawah) ---
+      { id: 'dev-deni', name: 'Deni', role: 'DevOps & Cloud Engineer', dept: 'tech', x: 18, z: 9, anchorY: 5.6, isDev: true, chairColor: 0x14b8a6, shirt: 0x0f766e, hair: 0x18181b, task: '🐳 Monitoring Docker, Caddy HTTPS, & VPS' },
+      { id: 'dev-clara', name: 'Clara', role: 'QA & Test Automation', dept: 'tech', x: 25, z: 9, anchorY: 5.6, isDev: true, chairColor: 0xec4899, shirt: 0xdb2777, hair: 0x451a03, task: '🧪 Automasi testing siklus posting transaksi' },
+      { id: 'dev-adit', name: 'Adit', role: 'Cybersecurity Engineer', dept: 'tech', x: 21.5, z: 13.5, anchorY: 5.0, isDev: true, chairColor: 0x64748b, shirt: 0x334155, hair: 0x0f172a, task: '🔒 Penetrasi testing & Verifikasi hash SHA-256' },
       { id: 'dev-yoga', name: 'Yoga', role: 'IT Support & Infra', dept: 'tech', anchorY: 5.4, isWalker: true, route: 'tech', shirt: 0x0ea5e9, task: '🚶 Cek kabel LAN switch & temperatur server' },
 
-      // --- DIVISI 3: PRODUCT & BUSINESS (Sayap Depan - 5 Orang) ---
-      { id: 'biz-farhan', name: 'Farhan', role: 'Product Manager', dept: 'product', x: -26, z: 18, anchorY: 5.2, chairColor: 0xa855f7, shirt: 0x7e22ce, hair: 0x18181b, task: '📅 Perencanaan rilis fitur Seventhsoft v3.2' },
-      { id: 'biz-lina', name: 'Lina', role: 'UI/UX Designer', dept: 'product', x: -17, z: 18, anchorY: 4.8, chairColor: 0xf43f5e, shirt: 0xf43f5e, hair: 0x7c2d12, task: '🎨 Desain prototipe navigasi modul gudang' },
-      { id: 'biz-tania', name: 'Tania', role: 'Customer Success', dept: 'product', x: -8, z: 18, anchorY: 5.2, chairColor: 0x10b981, shirt: 0x059669, hair: 0x292524, task: '🎧 Pandu klien akuntan baru via ticketing' },
-      { id: 'biz-bagus', name: 'Bagus', role: 'Enterprise Sales', dept: 'product', x: -21, z: 24, anchorY: 4.7, chairColor: 0x3b82f6, shirt: 0x1d4ed8, hair: 0x1c1917, task: '🤝 Demo otomatisasi AI ke klien korporasi' },
-      { id: 'biz-putri', name: 'Putri', role: 'Technical Writer', dept: 'product', x: -12, z: 24, anchorY: 4.4, chairColor: 0xfbbf24, shirt: 0xd97706, hair: 0x451a03, task: '📖 Update dokumentasi SOP Four-Eyes Principle' },
-
-      // --- DIVISI 4: PANTRY, KANTIN, LOUNGE & LOBBY (Sayap Kanan & Depan - 5 Orang) ---
-      { id: 'cafe-koko', name: 'Koko', role: 'Barista Kantor', dept: 'lounge', x: 20, z: -22, anchorY: 6.2, isStanding: true, shirt: 0x78350f, hair: 0x18181b, task: '☕ Seduh kopi espresso untuk programmer & akuntan' },
-      { id: 'cafe-buan', name: 'Bu Ani', role: 'Chef Kantin', dept: 'lounge', x: 28, z: -22, anchorY: 6.5, isStanding: true, shirt: 0xe11d48, hair: 0x451a03, task: '🥪 Siapkan snack sehat & kue sore kantor' },
-      { id: 'lounge-gilang', name: 'Gilang', role: 'Staff Istirahat Lounge', dept: 'lounge', x: 22, z: 13, anchorY: 4.6, isSittingSofa: true, shirt: 0x10b981, hair: 0x27272a, task: '🎮 Main game konsol di smart TV lounge' },
-      { id: 'lobby-bella', name: 'Bella', role: 'Front Desk Receptionist', dept: 'lounge', x: 1, z: 12, anchorY: 4.8, isFrontDesk: true, shirt: 0xd946ef, hair: 0x18181b, task: '🛎️ Sambut tamu klien akuntansi di lobby' },
-      { id: 'staff-siti-jalan', name: 'Siti', role: 'Staff Keuangan', dept: 'lounge', anchorY: 5.2, isWalker: true, route: 'canteen', shirt: 0xf43f5e, task: '🚶 OTW ambil air galon di dispenser pantry' }
+      // --- ZONA 7: ENTRANCE & RECEPTION (Depan Tengah) ---
+      { id: 'lobby-bella', name: 'Bella', role: 'Front Desk Receptionist', dept: 'lounge', x: 0, z: 15.5, anchorY: 4.8, isFrontDesk: true, shirt: 0xd946ef, hair: 0x18181b, task: '🛎️ Sambut tamu klien akuntansi di lobby' }
     ];
+
+    this.employeeData = employeeData;
 
     employeeData.forEach(emp => {
       if (emp.isWalker) {
@@ -816,7 +1040,7 @@ export class VirtualOffice3D {
   }
 
   createSeatedEmployee(emp) {
-    if (!emp.isStanding && !emp.isSittingSofa && !emp.isFrontDesk) {
+    if (!emp.isStanding && !emp.isSittingSofa && !emp.isFrontDesk && !emp.isMeeting) {
       this.createDeskStation({
         x: emp.x,
         z: emp.z,
@@ -832,6 +1056,11 @@ export class VirtualOffice3D {
     });
 
     char.root.position.set(emp.x, 0, emp.z);
+    if (emp.isMeeting) {
+      char.root.rotation.y = emp.z < 7 ? Math.PI : 0;
+    } else {
+      char.root.rotation.y = Math.PI; // Selalu hadap ke depan / kamera!
+    }
     if (emp.isSittingSofa || emp.isFrontDesk) {
       char.root.rotation.y = Math.PI; // Hadap ke depan ke arah pengunjung/kamera!
     }
@@ -876,30 +1105,29 @@ export class VirtualOffice3D {
     let waypoints = [];
     if (emp.route === 'finance') {
       waypoints = [
-        { x: -26, z: -17 },
-        { x: -14, z: -17 },
-        { x: -14, z: -3 },
-        { x: -26, z: -3 },
-        { x: -26, z: -17 }
+        { x: -25, z: -7 },
+        { x: -14, z: -7 },
+        { x: -14, z: -19 },
+        { x: -25, z: -19 },
+        { x: -25, z: -7 }
       ];
     } else if (emp.route === 'tech') {
       waypoints = [
-        { x: -5, z: -19 },
-        { x: 9, z: -19 },
-        { x: 9, z: -5 },
-        { x: -5, z: -5 },
-        { x: -5, z: -19 }
+        { x: 17, z: 4 },
+        { x: 27, z: 4 },
+        { x: 27, z: 12 },
+        { x: 17, z: 12 },
+        { x: 17, z: 4 }
       ];
     } else {
       // route canteen / water dispenser
       waypoints = [
-        { x: -3, z: 12 },
-        { x: 12, z: 5 },
-        { x: 26, z: -5 },
-        { x: 33, z: -7 },
-        { x: 22, z: -12 },
-        { x: 12, z: 5 },
-        { x: -3, z: 12 }
+        { x: 4, z: 2 },
+        { x: 14, z: -4 },
+        { x: 22, z: -10 },
+        { x: 28, z: -10 },
+        { x: 14, z: -4 },
+        { x: 4, z: 2 }
       ];
     }
 

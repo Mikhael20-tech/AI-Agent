@@ -1115,3 +1115,175 @@ body {
   box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
 }
 
+/* ========================================================================== */
+/* SIDEBAR PARTY / TIM AGENT SEVENTHSOFT (SEPERTI REFERENSI AGENT DASHBOARD) */
+/* ========================================================================== */
+.party-sidebar {
+  position: absolute;
+  top: 86px;
+  left: 20px;
+  bottom: 24px;
+  width: 220px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  z-index: 55;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.party-sidebar.collapsed {
+  transform: translateX(-175px);
+}
+
+.party-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.party-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.party-tag {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.05em;
+}
+
+.party-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.party-toggle-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.party-toggle-btn:hover {
+  background: #0284c7;
+  color: #fff;
+}
+
+.party-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: thin;
+}
+
+.party-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.party-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.party-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.party-card:hover {
+  background: #f8fafc;
+  border-color: #38bdf8;
+  transform: translateX(2px);
+}
+
+.party-card.selected {
+  background: #f0f9ff;
+  border-color: #0284c7;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.18);
+}
+
+.party-card-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.party-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.party-card-name {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.party-card-role {
+  font-size: 0.62rem;
+  color: #64748b;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.party-status-pill {
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.party-status-pill.idle { background: #f1f5f9; color: #64748b; }
+.party-status-pill.coding { background: #dbeafe; color: #1d4ed8; }
+.party-status-pill.posting { background: #ede9fe; color: #6d28d9; }
+.party-status-pill.audit { background: #fce7f3; color: #be185d; }
+.party-status-pill.active { background: #dcfce7; color: #15803d; }
+
+
