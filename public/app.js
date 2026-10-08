@@ -124,10 +124,32 @@ function handleLiveEmployeeSpeech(data) {
       'dev-kevin': '💻',
       'dev-sarah': '👩‍💻',
       'cafe-koko': '☕',
+      'cafe-buan': '🥪',
       'staff-budi-kurir': '🏃‍♂️',
       'staff-maya': '📑',
+      'staff-rian': '📊',
+      'staff-dimas': '📋',
+      'staff-nadia': '💳',
+      'staff-doni': '💼',
+      'staff-siti-jalan': '🚶‍♀️',
+      'lead-finance': '🛡️',
+      'dev-reza': '🏗️',
+      'dev-aris': '🧠',
+      'dev-bambang': '🗄️',
+      'dev-deni': '🐳',
+      'dev-clara': '🧪',
+      'dev-fikri': '📱',
+      'dev-adit': '🔒',
+      'dev-yoga': '🚶‍♂️',
+      'biz-farhan': '📅',
+      'biz-lina': '🎨',
+      'biz-tania': '🎧',
+      'biz-putri': '📖',
       'lobby-bella': '🛎️',
-      'lounge-gilang': '🎮'
+      'lounge-gilang': '🎮',
+      'agent-entry': '🤖',
+      'agent-rekon': '🏦',
+      'agent-pajak': '📈'
     };
     if (bcAvatar) {
       bcAvatar.textContent = avatarMap[data.empId] || '💬';
