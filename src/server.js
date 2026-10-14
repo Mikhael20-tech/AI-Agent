@@ -93,6 +93,10 @@ eventBus.on('employee_speech', (payload) => {
   console.log(`[WS BROADCAST] employee_speech: ${payload.name} -> "${payload.speech}" ke ${connectedClients.size} klien`);
   broadcast('EMPLOYEE_SPEECH', payload);
 });
+eventBus.on('coffee_queue', (payload) => {
+  console.log(`[WS BROADCAST] coffee_queue dari ${payload.initiator} ke ${connectedClients.size} klien`);
+  broadcast('COFFEE_QUEUE', payload);
+});
 
 // ============================================================================
 // REST API ROUTES

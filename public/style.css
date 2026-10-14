@@ -39,7 +39,7 @@ body {
   border-radius: 28px;
   overflow: hidden;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  background: #f6e8ea;
+  background: #0f172a;
 }
 
 #office-canvas-container {
@@ -1285,5 +1285,139 @@ body {
 .party-status-pill.posting { background: #ede9fe; color: #6d28d9; }
 .party-status-pill.audit { background: #fce7f3; color: #be185d; }
 .party-status-pill.active { background: #dcfce7; color: #15803d; }
+
+/* ========================================================================== */
+/* JADWAL KANTOR (08:00 - 17:00 & MAKAN SIANG 12:00 - 13:00)                  */
+/* ========================================================================== */
+.office-schedule-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+
+.schedule-clock-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-clock-time {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-family: monospace, sans-serif;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.schedule-mode-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.schedule-mode-pill.work {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.schedule-mode-pill.lunch {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  animation: pulse-dot 1.5s infinite;
+}
+
+.schedule-mode-pill.after-hours {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.schedule-presets {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.preset-pill {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 0.63rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.preset-pill:hover {
+  background: #0284c7;
+  color: #fff;
+  border-color: #0284c7;
+}
+
+.preset-pill.active {
+  background: #0f172a;
+  color: #fff;
+  border-color: #0f172a;
+}
+
+.preset-pill.live {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.preset-pill.live.active {
+  background: #059669;
+  color: #fff;
+  border-color: #059669;
+}
+
+/* ========================================================================== */
+/* DOSSIER INSPECTOR: ENERGI, MOOD & THOUGHTS                                 */
+/* ========================================================================== */
+.insp-energy-wrap {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.insp-energy-bar {
+  height: 100%;
+  width: 85%;
+  background: linear-gradient(90deg, #f59e0b, #10b981);
+  border-radius: 999px;
+  transition: width 0.4s ease, background 0.4s ease;
+}
+
+.insp-thought-bubble {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #0284c7;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.73rem;
+  color: #334155;
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
 
 

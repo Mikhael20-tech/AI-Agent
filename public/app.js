@@ -1,11 +1,11 @@
-import { VirtualOffice3D } from './office_3d.js';
+import { VirtualOfficePixel, VirtualOffice3D } from './office_pixel.js';
 
-// Inisialisasi 3D Virtual Office
+// Inisialisasi 2D Pixel Art Virtual Office
 let office3D = null;
 try {
-  office3D = new VirtualOffice3D('office-canvas-container', 'office-overlay-layer');
+  office3D = new VirtualOfficePixel('office-canvas-container', 'office-overlay-layer');
 } catch (e) {
-  console.error('Gagal menginisialisasi Three.js Virtual Office:', e);
+  console.error('Gagal menginisialisasi 2D Pixel Art Virtual Office:', e);
 }
 
 // Elemen DOM
@@ -101,6 +101,12 @@ function handleMessage(msg) {
 
     case 'EMPLOYEE_SPEECH':
       handleLiveEmployeeSpeech(msg.data);
+      break;
+
+    case 'COFFEE_QUEUE':
+      if (office3D && typeof office3D.startCoffeeQueue === 'function') {
+        office3D.startCoffeeQueue(msg.data?.initiator || 'Pak Mikhael');
+      }
       break;
   }
 }
@@ -538,7 +544,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnResetCam = document.getElementById('btn-reset-cam');
   if (btnResetCam) {
     btnResetCam.addEventListener('click', () => {
-      if (office3D && office3D.controls) {
+      if (office3D && office3D.resetCamera) {
+        office3D.resetCamera();
+      } else if (office3D && office3D.controls) {
         office3D.camera.position.copy(office3D.defaultCameraPos);
         office3D.controls.target.copy(office3D.cameraTarget);
       }
@@ -601,6 +609,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const avatars = { finance: '📊', tech: '💻', product: '🚀', lounge: '☕' };
     if (avatarEl) avatarEl.textContent = avatars[emp.dept] || '👤';
+
+    // Perbarui kondisi emosional & energi di inspector
+    if (office3D && office3D.updateInspectorUI) {
+      office3D.updateInspectorUI(emp);
+    }
 
     inspector.classList.add('open');
   });

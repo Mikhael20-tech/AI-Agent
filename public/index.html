@@ -4,11 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seventhsoft AI - Kantor AI Virtual Akuntansi</title>
-  <link rel="stylesheet" href="style.css?v=20261008_2">
-  <!-- Three.js & OrbitControls CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <link rel="stylesheet" href="style.css?v=20261009_pixel">
 </head>
 <body>
 
@@ -68,9 +64,19 @@
         <span class="hermes-metric-val" id="metric-telegram">1/1</span>
       </div>
 
-      <div class="hermes-metric-item">
-        <span class="hermes-metric-label">Jadwal</span>
-        <span class="hermes-metric-val" id="metric-jadwal">3</span>
+      <!-- JADWAL KANTOR & JAM KERJA (08:00 - 17:00 & MAKAN 12:00 - 13:00) -->
+      <div class="office-schedule-box">
+        <div class="schedule-clock-row">
+          <span class="schedule-clock-time" id="office-clock-time">09:30</span>
+          <span class="schedule-mode-pill work" id="office-schedule-badge">🟢 JAM KERJA (08:00 - 17:00)</span>
+        </div>
+        <div class="schedule-presets">
+          <button class="preset-pill active" data-hour="9" data-min="30" title="Jam Kerja Pagi">☀️ Pagi</button>
+          <button class="preset-pill" data-hour="12" data-min="15" title="Jam Istirahat Makan Siang">🍱 Makan (12:00-13:00)</button>
+          <button class="preset-pill" data-hour="14" data-min="30" title="Jam Rawan Ngantuk Sore">😴 Sore/Ngopi</button>
+          <button class="preset-pill" data-hour="17" data-min="15" title="Jam Pulang Kantor">🌙 Pulang</button>
+          <button class="preset-pill live" id="btn-toggle-live-clock" title="Sinkron Waktu Riil">⏱️ Live</button>
+        </div>
       </div>
 
       <!-- Quick Office Controls -->
@@ -116,14 +122,36 @@
             <span class="stat-lbl">Kinerja</span>
             <span class="stat-val" id="insp-perf">98.5%</span>
           </div>
+          <!-- KONDISI KECERDASAN & MOOD PEGAWAI -->
+          <div class="insp-stat-card" style="grid-column: span 2;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span class="stat-lbl">Kondisi & Mood</span>
+              <span class="stat-val" id="insp-mood-badge" style="font-size:0.8rem; font-weight:800;">🔥 Semangat</span>
+            </div>
+            <div class="insp-energy-wrap">
+              <div class="insp-energy-bar" id="insp-energy-bar" style="width: 85%;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:#64748b; margin-top:3px;">
+              <span>Energi: <strong id="insp-energy-val" style="color:#0f172a;">85%</strong></span>
+              <span id="insp-coffee-count">☕ Kopi: 0 gelas</span>
+            </div>
+          </div>
         </div>
+
+        <div class="insp-section">
+          <label>Isi Pikiran (Inner Monologue):</label>
+          <p id="insp-thought" class="insp-thought-bubble">"Sedang fokus memeriksa dokumen invoice Seventhsoft..."</p>
+        </div>
+
         <div class="insp-section">
           <label>Tugas yang Sedang Dikerjakan:</label>
           <p id="insp-task" class="insp-task-text">Sedang memproses pekerjaan...</p>
         </div>
+
         <div class="insp-action-buttons">
-          <button class="btn-insp-action" id="btn-insp-chat">💬 Sapa Pegawai</button>
-          <button class="btn-insp-action secondary" id="btn-insp-task">⚡ Beri Tugas Cepat</button>
+          <button class="btn-insp-action" id="btn-insp-coffee" style="background:#78350f; color:#fff;">☕ Traktir Kopi (+Energi)</button>
+          <button class="btn-insp-action" id="btn-insp-break" style="background:#0284c7; color:#fff;">🌴 Ajak Istirahat Lounge</button>
+          <button class="btn-insp-action" id="btn-insp-cheer" style="background:#d97706; color:#fff;">🔥 Kobarkan Semangat</button>
         </div>
       </div>
     </div>
@@ -383,6 +411,6 @@
 
   </section>
 
-  <script type="module" src="app.js?v=20261008_2"></script>
+  <script type="module" src="app.js?v=20261009_pixel"></script>
 </body>
 </html>

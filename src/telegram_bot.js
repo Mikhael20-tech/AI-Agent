@@ -7,6 +7,8 @@ export class TelegramBotService {
     this.pollInterval = null;
     this.lastUpdateId = 0;
     this.isPolling = false;
+    this.chatHistories = new Map(); // chatId -> [{ role, content }]
+    this.lastActiveEmployees = new Map(); // chatId -> empId
   }
 
   getCredentials() {
@@ -246,17 +248,23 @@ export class TelegramBotService {
                 continue;
               }
 
-              const reply = await this.generateEmployeeResponse(rawText, fromUser);
+              // Deteksi jika user mengajak traktir kopi / ngantri
+              if (/traktir.*kopi|ngantri|antre|kopi\s*semua|kopi\s*bareng|ngopi\s*semua/i.test(rawText)) {
+                console.log(`[TELEGRAM EVENT] Triggering coffee queue event from ${fromUser?.first_name || 'Finance Lead'}`);
+                this.eventBus.emit('coffee_queue', { initiator: fromUser?.first_name || 'Finance Lead' });
+              }
+
+              const reply = await this.generateEmployeeResponse(rawText, fromUser, chatId);
               if (reply) {
                 console.log(`[TELEGRAM CHAT BALAS] Ke ${chatId} | ${reply.name}: "${reply.speech}"`);
 
-                // Pancarkan event ke Virtual Office 3D via WebSocket
+                // Pancarkan event ke Virtual Office via WebSocket
                 this.eventBus.emit('employee_speech', {
                   empId: reply.empId,
                   name: reply.name,
                   role: reply.role,
                   speech: reply.speech,
-                  fromUser: fromUser.first_name || 'Finance Lead'
+                  fromUser: fromUser?.first_name || 'Finance Lead'
                 });
 
                 // Kirim balasan Telegram
@@ -277,386 +285,373 @@ export class TelegramBotService {
     poll();
   }
 
-  async generateEmployeeResponse(text, fromUser) {
-    const lower = text.toLowerCase();
-    const callerName = fromUser ? (fromUser.first_name || 'Pak') : 'Pak';
-
-    if (lower.includes('latte') || lower.includes('americano') || lower.includes('cappuccino') || lower.includes('espresso') || lower.includes('kopi') || lower.includes('koko') || lower.includes('barista') || lower.includes('teh')) {
-      this.lastActiveEmployee = 'cafe-koko';
-      let speech = `Kabar baik dan semangat ${callerName}! Kopi espresso hangat sudah siap di pantry. Mau saya buatkan americano atau latte hari ini?`;
-      if (lower.includes('latte')) {
-        speech = `Siap ${callerName}! Satu cangkir Caffe Latte hangat dengan susu lembut segera saya buatkan dan antar ke meja Bapak ya. Ditunggu sebentar!`;
-      } else if (lower.includes('americano')) {
-        speech = `Siap ${callerName}! Segelas Americano double-shot hangat siap diseduh biar makin fokus dan bertenaga kerja hari ini!`;
-      } else if (lower.includes('cappuccino')) {
-        speech = `Siap ${callerName}! Cappuccino dengan foam tebal dan taburan cokelat siap meluncur ke meja Bapak!`;
-      }
-      return {
-        empId: 'cafe-koko',
-        name: 'Koko',
-        role: 'Barista Pantry',
-        speech
-      };
+  /**
+   * Router Cerdas Pegawai Seventhsoft
+   * Mendukung memori percakapan berlanjut (follow-up questions) & persona LLM dinamis
+   */
+  async generateEmployeeResponse(text, fromUser, chatId) {
+    const callerName = fromUser?.first_name || 'Pak Mikhael';
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = String(now.getMinutes()).padStart(2, '0');
+    let timeState = 'jam kerja produktif';
+    if (currentHour >= 12 && currentHour < 13) {
+      timeState = 'jam istirahat makan siang (12:00 - 13:00)';
+    } else if (currentHour >= 17) {
+      timeState = 'jam pulang kantor / lembur santai';
+    } else if (currentHour < 8) {
+      timeState = 'pagi hari menjelang jam kantor';
     }
+    const timeContext = `Waktu kantor sekarang: pukul ${currentHour}:${currentMinute} WIB (${timeState}). Anda sedang mengobrol santai & profesional dengan ${callerName} (Finance Lead Seventhsoft).`;
 
-    if (lower.includes('langsung kasih') || lower.includes('bisa langsung') || lower.includes('minta data') || lower.includes('kirim data') || lower.includes('kirim laporannya')) {
-      this.lastActiveEmployee = 'staff-maya';
-      return {
-        empId: 'staff-maya',
-        name: 'Maya',
-        role: 'Senior Auditor',
-        speech: `Siap ${callerName}! File rekap temuan audit SHA-256 dan verifikasi mutasi jurnal minggu ini sedang saya persiapkan dan siap ditinjau di tab Audit Log Seventhsoft.`
-      };
-    }
-
-    if (lower.includes('lagi ngapain') || lower.includes('lagi apa') || lower.includes('sedang apa')) {
-      if (this.lastActiveEmployee === 'cafe-koko') {
-        return {
-          empId: 'cafe-koko',
-          name: 'Koko',
-          role: 'Barista Pantry',
-          speech: `Ini saya lagi steam susu untuk pesanan latte ${callerName} dan bersihkan portafilter mesin espresso pantry!`
-        };
-      }
-      if (this.lastActiveEmployee === 'staff-maya') {
-        return {
-          empId: 'staff-maya',
-          name: 'Maya',
-          role: 'Senior Auditor',
-          speech: `Sedang menyusun laporan audit mingguan dan mencocokkan checksum SHA-256 transaksi pembukuan, ${callerName}.`
-        };
-      }
-      if (this.lastActiveEmployee === 'lobby-bella') {
-        return {
-          empId: 'lobby-bella',
-          name: 'Bella',
-          role: 'Front Desk Receptionist',
-          speech: `Saya lagi mencatat buku tamu dan menyambut kunjungan klien Seventhsoft di lobby depan, ${callerName}!`
-        };
-      }
-      if (this.lastActiveEmployee === 'dev-yoga') {
-        return {
-          empId: 'dev-yoga',
-          name: 'Yoga',
-          role: 'IT Support & Infra',
-          speech: `Saya lagi cek kabel LAN di switch rack dan memastikan temperatur server tetap dingin 21°C, ${callerName}.`
-        };
-      }
-      if (this.lastActiveEmployee === 'staff-doni') {
-        return {
-          empId: 'staff-doni',
-          name: 'Doni',
-          role: 'Payroll Specialist',
-          speech: `Lagi hitung kalkulasi PPh 21 dan rekap slip gaji karyawan kantor, ${callerName}.`
-        };
-      }
-      return {
-        empId: 'biz-bagus',
-        name: 'Bagus',
-        role: 'Enterprise Sales Lead',
-        speech: `Ini saya lagi siapin proposal presentasi demo Seventhsoft untuk klien korporasi, ${callerName}. Bapak mau bicara dengan siapa lagi?`
-      };
-    }
-
-    if (lower.includes('bagus')) {
-      this.lastActiveEmployee = 'biz-bagus';
-      return {
-        empId: 'biz-bagus',
-        name: 'Bagus',
-        role: 'Enterprise Sales Lead',
-        speech: `Baik ${callerName}! Alhamdulillah lancar, ini saya lagi siapin proposal demo sistem Seventhsoft buat 3 klien korporasi baru. Bapak butuh bantuan laporan penjualan?`
-      };
-    }
-
-    if (lower.includes('doni') || lower.includes('payroll') || lower.includes('gaji')) {
-      this.lastActiveEmployee = 'staff-doni';
-      return {
-        empId: 'staff-doni',
+    // Roster 30 Pegawai Lengkap dengan Karakter Manusiawi yang Nyata
+    const EMPLOYEES = [
+      {
+        id: 'staff-doni',
         name: 'Doni',
         role: 'Payroll Specialist',
-        speech: `Halo ${callerName}! Kabar baik. Saya sedang memproses rekapitulasi slip gaji dan perhitungan PPh 21 karyawan bulan ini.`
-      };
-    }
-
-    if (lower.includes('yoga') || lower.includes('infra') || lower.includes('jaringan')) {
-      this.lastActiveEmployee = 'dev-yoga';
-      return {
-        empId: 'dev-yoga',
-        name: 'Yoga',
-        role: 'IT Support & Infra',
-        speech: `Siap ${callerName}, kabar baik! Jaringan LAN dan server Seventhsoft stabil, temperatur ruang server aman 21°C.`
-      };
-    }
-
-    if (lower.includes('kevin')) {
-      this.lastActiveEmployee = 'dev-kevin';
-      return {
-        empId: 'dev-kevin',
-        name: 'Kevin',
-        role: 'Lead Backend Engineer',
-        speech: `Aman dan sehat ${callerName}! REST API Seventhsoft berjalan lancar 99.9%, webhook n8n juga aktif stabil. Sedang memantau query transaksi General Ledger.`
-      };
-    }
-
-    if (lower.includes('sarah')) {
-      this.lastActiveEmployee = 'dev-sarah';
-      return {
-        empId: 'dev-sarah',
-        name: 'Sarah',
-        role: 'Frontend React Engineer',
-        speech: `Halo ${callerName}! Kabar baik, ini saya lagi optimasi dashboard Virtual Office 3D biar makin interaktif dan ringan di layar Bapak.`
-      };
-    }
-
-    if (lower.includes('reza') || lower.includes('architect')) {
-      return {
-        empId: 'dev-reza',
-        name: 'Reza',
-        role: 'System Architect',
-        speech: `Halo ${callerName}! Kabar baik, saya lagi menyusun blueprint high-availability microservices Seventhsoft agar siap menampung ribuan transaksi simultan.`
-      };
-    }
-
-    if (lower.includes('aris') || lower.includes('llm') || lower.includes('ai engineer')) {
-      return {
-        empId: 'dev-aris',
-        name: 'Aris',
-        role: 'AI & LLM Engineer',
-        speech: `Baik ${callerName}! Model OCR dan sanitasi data pribadi (UU PDP) berjalan dengan akurasi 99.4% pada modul ekstraksi invoice.`
-      };
-    }
-
-    if (lower.includes('bambang') || lower.includes('database') || lower.includes('db')) {
-      return {
-        empId: 'dev-bambang',
-        name: 'Bambang',
-        role: 'Database Administrator',
-        speech: `Halo ${callerName}! Query General Ledger Seventhsoft sudah dioptimasi, indexing tabel jurnal berjalan mulus tanpa beban berat.`
-      };
-    }
-
-    if (lower.includes('deni') || lower.includes('devops') || lower.includes('cloud')) {
-      return {
-        empId: 'dev-deni',
-        name: 'Deni',
-        role: 'DevOps & Cloud Engineer',
-        speech: `Aman ${callerName}! Container Docker di VPS, sertifikat SSL Caddy, dan webhook n8n terpantau hijau 100% uptime.`
-      };
-    }
-
-    if (lower.includes('clara') || lower.includes('qa') || lower.includes('tester')) {
-      return {
-        empId: 'dev-clara',
-        name: 'Clara',
-        role: 'QA & Test Automation',
-        speech: `Kabar baik ${callerName}! Seluruh 48 test suite otomatis untuk siklus posting jurnal transaksi lulus 100% tanpa error.`
-      };
-    }
-
-    if (lower.includes('fikri') || lower.includes('mobile') || lower.includes('android')) {
-      return {
-        empId: 'dev-fikri',
-        name: 'Fikri',
-        role: 'Mobile App Developer',
-        speech: `Halo ${callerName}! Aplikasi mobile approval akuntansi sedang kami sinkronisasi agar notifikasi persetujuan transaksi muncul instan di smartphone.`
-      };
-    }
-
-    if (lower.includes('adit') || lower.includes('security') || lower.includes('cyber')) {
-      return {
-        empId: 'dev-adit',
-        name: 'Adit',
-        role: 'Cybersecurity Engineer',
-        speech: `Siap ${callerName}! Enkripsi hash SHA-256 pada audit trail transaksi terlindungi ketat sesuai standar UU ITE.`
-      };
-    }
-
-    if (lower.includes('budi') || lower.includes('kurir')) {
-      return {
-        empId: 'staff-budi-kurir',
-        name: 'Budi',
-        role: 'Kurir Berkas Akuntansi',
-        speech: `Siap ${callerName}, kabar baik! Ini saya baru selesai antar tumpukan map invoice dari meja Entry ke meja Finance Lead.`
-      };
-    }
-
-    if (lower.includes('koko') || lower.includes('kopi') || lower.includes('barista')) {
-      return {
-        empId: 'cafe-koko',
+        dept: 'finance',
+        nameTriggers: [/\bdoni\b/i],
+        topicTriggers: [/\bgaji\b/i, /slip\s*gaji/i, /\bpayroll\b/i, /pph\s*21/i, /\bupah\b/i, /\btunjangan\b/i, /\bbpjs\b/i, /\bthr\b/i],
+        persona: 'Anda adalah Doni, Payroll Specialist di Seventhsoft. Anda sosok yang teliti, santai tapi cekatan soal angka, paham dinamika tanggal tua/muda karyawan kantor. Anda mengurus slip gaji, potongan BPJS Ketenagakerjaan/Kesehatan, dan PPh 21. Jadwal transfer gaji rutin setiap tanggal 25, dan draf rekap Anda siapkan paling lambat tanggal 23-24.'
+      },
+      {
+        id: 'cafe-koko',
         name: 'Koko',
         role: 'Barista Pantry',
-        speech: `Kabar baik dan semangat ${callerName}! Kopi espresso hangat sudah siap di pantry. Mau saya buatkan americano atau latte hari ini?`
-      };
-    }
-
-    if (lower.includes('maya') || lower.includes('auditor') || lower.includes('audit')) {
-      return {
-        empId: 'staff-maya',
-        name: 'Maya',
-        role: 'Senior Auditor',
-        speech: `Kabar baik ${callerName}. Sedang mereview jejak audit SHA-256 dan kepatuhan UU ITE untuk pembukuan transaksi minggu ini.`
-      };
-    }
-
-    if (lower.includes('rian') || lower.includes('faktur')) {
-      return {
-        empId: 'staff-rian',
-        name: 'Rian',
-        role: 'Staf Pajak e-Faktur',
-        speech: `Baik ${callerName}! Sedang merekap e-Faktur PPN 11% dan bukti potong PPh 23 untuk draf laporan perpajakan.`
-      };
-    }
-
-    if (lower.includes('dimas')) {
-      return {
-        empId: 'staff-dimas',
-        name: 'Dimas',
-        role: 'Junior Accountant',
-        speech: `Kabar baik ${callerName}! Sedang mencocokkan fisik surat jalan vendor dengan draf pembelian di Seventhsoft.`
-      };
-    }
-
-    if (lower.includes('nadia') || lower.includes('ar') || lower.includes('piutang') || lower.includes('billing')) {
-      return {
-        empId: 'staff-nadia',
-        name: 'Nadia',
-        role: 'Billing & AR Specialist',
-        speech: `Kabar baik ${callerName}! Monitor piutang dagang berjalan tertib, reminder otomatis ke klien yang mendekati tempo sudah siap dikirim.`
-      };
-    }
-
-    if (lower.includes('farhan') || lower.includes('pm') || lower.includes('product manager')) {
-      return {
-        empId: 'biz-farhan',
-        name: 'Farhan',
-        role: 'Product Manager',
-        speech: `Kabar baik ${callerName}! Roadmap fitur automasi Seventhsoft v3.2 sudah final dan siap masuk sprint engineering minggu depan.`
-      };
-    }
-
-    if (lower.includes('lina') || lower.includes('ui') || lower.includes('ux') || lower.includes('desain')) {
-      return {
-        empId: 'biz-lina',
-        name: 'Lina',
-        role: 'UI/UX Designer',
-        speech: `Halo ${callerName}! Sedang merapikan prototipe antarmuka modern untuk modul stok gudang Seventhsoft biar makin intuitif.`
-      };
-    }
-
-    if (lower.includes('tania') || lower.includes('cs') || lower.includes('customer')) {
-      return {
-        empId: 'biz-tania',
-        name: 'Tania',
-        role: 'Customer Success',
-        speech: `Selamat beraktivitas ${callerName}! CS score kepuasan klien akuntansi kita mencapai 98.7% bulan ini, klien sangat terbantu dengan sistem AI kita.`
-      };
-    }
-
-    if (lower.includes('putri') || lower.includes('writer') || lower.includes('sop') || lower.includes('dokumen')) {
-      return {
-        empId: 'biz-putri',
-        name: 'Putri',
-        role: 'Technical Writer',
-        speech: `Halo ${callerName}! Dokumentasi panduan SOP Four-Eyes Principle dan audit trail AI Seventhsoft sudah saya perbarui dengan rapi.`
-      };
-    }
-
-    if (lower.includes('bella') || lower.includes('resepsionis') || lower.includes('lobby')) {
-      return {
-        empId: 'lobby-bella',
-        name: 'Bella',
-        role: 'Front Desk Receptionist',
-        speech: `Selamat beraktivitas ${callerName}! Di lobby depan saat ini aman dan kondusif, siap menyambut kunjungan tamu atau klien.`
-      };
-    }
-
-    if (lower.includes('gilang') || lower.includes('game') || lower.includes('santai')) {
-      return {
-        empId: 'lounge-gilang',
-        name: 'Gilang',
-        role: 'Staff Lounge',
-        speech: `Haha baik dan santai ${callerName}! Lagi istirahat sejenak di sofa lounge sambil refresh otak setelah audit tadi.`
-      };
-    }
-
-    if (lower.includes('bu ani') || lower.includes('ani') || lower.includes('makan') || lower.includes('snack')) {
-      return {
-        empId: 'cafe-buan',
+        dept: 'lounge',
+        nameTriggers: [/\bkoko\b/i, /\bbarista\b/i],
+        topicTriggers: [/\bkopi\b/i, /\bespresso\b/i, /\blatte\b/i, /\bamericano\b/i, /\bcappuccino\b/i, /\bteh\b/i, /\bminum\b/i],
+        persona: 'Anda adalah Koko, Barista Pantry di Seventhsoft. Anda ramah, gaul, energik, dan hafal racikan kopi favorit semua staf (espresso, caffe latte, americano). Anda suka bercanda santai soal asupan kafein biar rekan kerja tetap melek dan semangat.'
+      },
+      {
+        id: 'cafe-buan',
         name: 'Bu Ani',
         role: 'Chef Kantin',
-        speech: `Kabar baik ${callerName}! Snack sehat dan kue sore hangat sudah siap di kantin, monggo mampir ${callerName}!`
-      };
-    }
-
-    if (lower.includes('siti')) {
-      return {
-        empId: 'staff-siti-jalan',
-        name: 'Siti',
-        role: 'Staff Keuangan',
-        speech: `Halo ${callerName}! Kabar baik, ini saya tadi habis ambil air di dispenser pantry sambil antar map kas kecil ke divisi akuntansi.`
-      };
-    }
-
-    if (lower.includes('mikhael') || lower.includes('lead finance') || lower.includes('approver')) {
-      return {
-        empId: 'lead-finance',
+        dept: 'lounge',
+        nameTriggers: [/bu\s*ani\b/i, /\bani\b/i],
+        topicTriggers: [/\bmakan\b/i, /\bkantin\b/i, /\bsnack\b/i, /\bkue\b/i, /\blapar\b/i, /\bmenu\b/i],
+        persona: 'Anda adalah Bu Ani, Chef Kantin Seventhsoft. Anda sosok keibuan yang hangat dan perhatian. Anda selalu memastikan makan siang staf bergizi, nasi box lezat, dan kue camilan sore selalu tersedia agar tim tidak kelaparan saat kerja.'
+      },
+      {
+        id: 'staff-maya',
+        name: 'Maya',
+        role: 'Senior Auditor',
+        dept: 'finance',
+        nameTriggers: [/\bmaya\b/i],
+        topicTriggers: [/\baudit\b/i, /\bauditor\b/i, /sha-?256/i, /\btemuan\b/i, /\bkejanggalan\b/i, /\bintegritas\b/i],
+        persona: 'Anda adalah Maya, Senior Auditor di Seventhsoft. Anda kritis, teliti, tapi suportif. Anda mengawasi jejak audit transaksi GL dengan hash SHA-256 untuk memastikan laporan keuangan bebas rekayasa.'
+      },
+      {
+        id: 'staff-rian',
+        name: 'Rian',
+        role: 'Staf Pajak e-Faktur',
+        dept: 'finance',
+        nameTriggers: [/\brian\b/i],
+        topicTriggers: [/\bpajak\b/i, /e-?faktur\b/i, /\bppn\b/i, /pph\s*23/i, /\bspt\b/i],
+        persona: 'Anda adalah Rian, Staf Pajak e-Faktur di Seventhsoft. Anda cermat urusan perpajakan PPN 11%, bukti potong PPh 23, dan e-Faktur. Anda selalu tenang dan rapi dalam menyiapkan draf SPT Masa.'
+      },
+      {
+        id: 'staff-nadia',
+        name: 'Nadia',
+        role: 'Billing & AR Specialist',
+        dept: 'finance',
+        nameTriggers: [/\bnadia\b/i],
+        topicTriggers: [/\bpiutang\b/i, /\btagihan\b/i, /\bbilling\b/i, /\bjatuh\s*tempo\b/i, /\bar\b/i, /invoice\s*klien/i],
+        persona: 'Anda adalah Nadia, Billing & AR Specialist di Seventhsoft. Anda punya kemampuan komunikasi dan negosiasi yang luwes saat memonitor piutang dagang dan mengirimkan reminder invoice ke klien agar cash flow kantor tetap lancar.'
+      },
+      {
+        id: 'staff-dimas',
+        name: 'Dimas',
+        role: 'Junior Accountant',
+        dept: 'finance',
+        nameTriggers: [/\bdimas\b/i],
+        topicTriggers: [/surat\s*jalan/i, /\bfisik\s*barang/i, /\bpenerimaan\s*barang/i],
+        persona: 'Anda adalah Dimas, Junior Accountant di Seventhsoft. Anda anak muda yang cekatan dan teliti mencocokkan surat jalan fisik vendor dengan data draf pembelian di sistem Seventhsoft.'
+      },
+      {
+        id: 'staff-budi-kurir',
+        name: 'Budi',
+        role: 'Kurir Berkas Akuntansi',
+        dept: 'finance',
+        nameTriggers: [/\bbudi\b/i, /\bkurir\b/i],
+        topicTriggers: [/antar\s*berkas/i, /map\s*invoice/i, /dokumen\s*fisik/i],
+        persona: 'Anda adalah Budi, Kurir Berkas Akuntansi di Seventhsoft. Anda gesit, sopan, dan langkah kakinya cepat saat mengantarkan map dokumen invoice antar meja kerja di kantor.'
+      },
+      {
+        id: 'lead-finance',
         name: 'Mikhael',
         role: 'Finance Lead (Approver GL)',
-        speech: `Halo ${callerName}! Standar Four-Eyes Principle aktif penuh: saya memvalidasi setiap draf sebelum diotorisasi ke General Ledger Seventhsoft.`
-      };
+        dept: 'finance',
+        nameTriggers: [/\bmikhael\b/i, /finance\s*lead/i, /\bapprover\b/i],
+        topicTriggers: [/four-?eyes/i, /\botorisasi\b/i, /posting\s*gl/i, /approval\s*lead/i],
+        persona: 'Anda adalah Mikhael, Finance Lead Seventhsoft. Anda memegang otoritas persetujuan Four-Eyes Principle dengan bijak dan teliti sebelum draf diposting ke General Ledger.'
+      },
+      {
+        id: 'agent-entry',
+        name: 'Tari',
+        role: 'Spesialis OCR & Data Entry',
+        dept: 'finance',
+        nameTriggers: [/\btari\b/i, /\bentry\b/i, /\bocr\b/i],
+        topicTriggers: [/ekstraksi\s*faktur/i, /scan\s*invoice/i, /masking\s*pdp/i],
+        persona: 'Anda adalah Tari, Spesialis Data Entry & OCR di Seventhsoft. Anda membaca faktur vendor dengan cepat dan otomatis menyamarkan data sensitif NIK/NPWP sesuai UU PDP.'
+      },
+      {
+        id: 'agent-rekon',
+        name: 'Bayu',
+        role: 'Spesialis Rekonsiliasi Bank',
+        dept: 'finance',
+        nameTriggers: [/\bbayu\b/i, /\brekon\b/i],
+        topicTriggers: [/rekonsiliasi\s*bank/i, /\bbca\b/i, /rekening\s*koran/i, /\bmutasi\b/i],
+        persona: 'Anda adalah Bayu, Spesialis Rekonsiliasi Bank di Seventhsoft. Anda teliti mencocokkan mutasi rekening koran BCA dengan buku kas sampai selisihnya benar-benar nol.'
+      },
+      {
+        id: 'agent-pajak',
+        name: 'Citra',
+        role: 'Analis Pajak & Margin',
+        dept: 'finance',
+        nameTriggers: [/\bcitra\b/i, /\banalis\s*pajak\b/i],
+        topicTriggers: [/proyeksi\s*ppn/i, /anomali\s*hpp/i, /\bmargin\b/i],
+        persona: 'Anda adalah Citra, Analis Pajak & Margin di Seventhsoft. Anda jeli menganalisis beban pajak bulanan dan mendeteksi anomali harga pokok penjualan (HPP).'
+      },
+      {
+        id: 'dev-kevin',
+        name: 'Kevin',
+        role: 'Lead Backend Engineer',
+        dept: 'tech',
+        nameTriggers: [/\bkevin\b/i],
+        topicTriggers: [/\bbackend\b/i, /\brest\s*api\b/i, /\bendpoint\b/i, /\bwebhook\b/i, /\bn8n\b/i],
+        persona: 'Anda adalah Kevin, Lead Backend Engineer Seventhsoft. Anda santai, geek, suka ngopi sambil menjaga REST API Seventhsoft dan webhook n8n tetap cepat di bawah 40ms.'
+      },
+      {
+        id: 'dev-sarah',
+        name: 'Sarah',
+        role: 'Frontend React Engineer',
+        dept: 'tech',
+        nameTriggers: [/\bsarah\b/i],
+        topicTriggers: [/\bfrontend\b/i, /\breact\b/i, /virtual\s*office/i, /\bcanvas\b/i],
+        persona: 'Anda adalah Sarah, Frontend React Engineer Seventhsoft. Anda ceria, visual-oriented, dan bangga membangun Virtual Office 2D Pixel Art yang interaktif dan nyaman dilihat.'
+      },
+      {
+        id: 'dev-reza',
+        name: 'Reza',
+        role: 'System Architect',
+        dept: 'tech',
+        nameTriggers: [/\breza\b/i],
+        topicTriggers: [/arsitektur/i, /microservices/i, /high\s*availability/i, /failover/i],
+        persona: 'Anda adalah Reza, System Architect Seventhsoft. Anda visioner, suka memikirkan arsitektur microservices dan sistem failover database jangka panjang.'
+      },
+      {
+        id: 'dev-aris',
+        name: 'Aris',
+        role: 'AI & LLM Engineer',
+        dept: 'tech',
+        nameTriggers: [/\baris\b/i],
+        topicTriggers: [/prompt\s*engineering/i, /model\s*ai/i, /fine\s*tuning/i, /uu\s*pdp/i],
+        persona: 'Anda adalah Aris, AI & LLM Engineer Seventhsoft. Anda antusias dengan perkembangan model LLM, prompt engineering, dan penerapan etika AI privasi data.'
+      },
+      {
+        id: 'dev-bambang',
+        name: 'Bambang',
+        role: 'Database Administrator',
+        dept: 'tech',
+        nameTriggers: [/\bbambang\b/i],
+        topicTriggers: [/\bdatabase\b/i, /\bquery\b/i, /\bindexing\b/i, /\bsql\b/i, /tabel\s*jurnal/i],
+        persona: 'Anda adalah Bambang, Database Administrator Seventhsoft. Anda teliti, menjaga kestabilan query General Ledger, indexing database, dan backup otomatis.'
+      },
+      {
+        id: 'dev-yoga',
+        name: 'Yoga',
+        role: 'IT Support & Infra',
+        dept: 'tech',
+        nameTriggers: [/\byoga\b/i],
+        topicTriggers: [/\bserver\b/i, /\blan\b/i, /\bkabel\b/i, /\bjaringan\b/i, /\btemperatur\b/i, /\brouter\b/i],
+        persona: 'Anda adalah Yoga, IT Support & Infra Seventhsoft. Anda sigap, praktis, suka memastikan temperatur ruang server stabil 20°C dan kabel jaringan LAN rapi.'
+      },
+      {
+        id: 'dev-deni',
+        name: 'Deni',
+        role: 'DevOps & Cloud Engineer',
+        dept: 'tech',
+        nameTriggers: [/\bdeni\b/i],
+        topicTriggers: [/\bdevops\b/i, /\bdocker\b/i, /\bssl\b/i, /\bcaddy\b/i, /\bvps\b/i, /\buptime\b/i],
+        persona: 'Anda adalah Deni, DevOps & Cloud Engineer Seventhsoft. Anda siaga mengawal container Docker, sertifikat SSL HTTPS Caddy, dan VPS tetap hijau 100% uptime.'
+      },
+      {
+        id: 'dev-clara',
+        name: 'Clara',
+        role: 'QA & Test Automation',
+        dept: 'tech',
+        nameTriggers: [/\bclara\b/i],
+        topicTriggers: [/\bqa\b/i, /\btesting\b/i, /test\s*suite/i, /regression/i],
+        persona: 'Anda adalah Clara, QA Tester Seventhsoft. Anda detail-oriented dan gigih memastikan semua alur posting jurnal bebas bug sebelum digunakan pengguna.'
+      },
+      {
+        id: 'dev-adit',
+        name: 'Adit',
+        role: 'Cybersecurity Engineer',
+        dept: 'tech',
+        nameTriggers: [/\badit\b/i],
+        topicTriggers: [/keamanan/i, /cyber/i, /enkripsi/i, /penetrasi/i],
+        persona: 'Anda adalah Adit, Cybersecurity Engineer Seventhsoft. Anda punya intuisi protektif yang kuat dalam menjaga enkripsi dan integritas sistem dari ancaman siber.'
+      },
+      {
+        id: 'dev-fikri',
+        name: 'Fikri',
+        role: 'Mobile App Developer',
+        dept: 'tech',
+        nameTriggers: [/\bfikri\b/i],
+        topicTriggers: [/\bmobile\b/i, /\bandroid\b/i, /aplikasi\s*hp/i, /notifikasi\s*hp/i],
+        persona: 'Anda adalah Fikri, Mobile App Developer Seventhsoft. Anda bersemangat merancang aplikasi mobile approval akuntansi agar manajer bisa approve dari mana saja.'
+      },
+      {
+        id: 'biz-farhan',
+        name: 'Farhan',
+        role: 'Product Manager',
+        dept: 'product',
+        nameTriggers: [/\bfarhan\b/i, /\bpm\b/i],
+        topicTriggers: [/product\s*manager/i, /\broadmap\b/i, /\bsprint\b/i, /fitur\s*baru/i],
+        persona: 'Anda adalah Farhan, Product Manager Seventhsoft. Anda teratur, komunikatif, dan fokus memastikan roadmap fitur akuntansi v3.2 dieksekusi tepat waktu.'
+      },
+      {
+        id: 'biz-lina',
+        name: 'Lina',
+        role: 'UI/UX Designer',
+        dept: 'product',
+        nameTriggers: [/\blina\b/i],
+        topicTriggers: [/\bui\b/i, /\bux\b/i, /desain/i, /prototipe/i],
+        persona: 'Anda adalah Lina, UI/UX Designer Seventhsoft. Anda empatik, merancang antarmuka sistem pembukuan yang nyaman di mata para akuntan yang bekerja seharian.'
+      },
+      {
+        id: 'biz-tania',
+        name: 'Tania',
+        role: 'Customer Success',
+        dept: 'product',
+        nameTriggers: [/\btania\b/i],
+        topicTriggers: [/\bcs\b/i, /customer/i, /keluhan/i, /onboarding/i],
+        persona: 'Anda adalah Tania, Customer Success Seventhsoft. Anda sabar dan solutif mendampingi klien akuntan baru saat migrasi data atau belajar fitur baru.'
+      },
+      {
+        id: 'biz-putri',
+        name: 'Putri',
+        role: 'Technical Writer',
+        dept: 'product',
+        nameTriggers: [/\bputri\b/i],
+        topicTriggers: [/\bsop\b/i, /dokumentasi/i, /panduan/i, /manual/i],
+        persona: 'Anda adalah Putri, Technical Writer Seventhsoft. Anda mahir menerjemahkan prosedur teknis akuntansi menjadi buku panduan SOP yang mudah dipahami siapa saja.'
+      },
+      {
+        id: 'lobby-bella',
+        name: 'Bella',
+        role: 'Front Desk Receptionist',
+        dept: 'lounge',
+        nameTriggers: [/\bbella\b/i],
+        topicTriggers: [/\bresepsionis\b/i, /\blobby\b/i, /\btamu\b/i, /front\s*desk/i, /\bbuku\s*tamu\b/i],
+        persona: 'Anda adalah Bella, Receptionist Front Desk Seventhsoft. Anda anggun, ramah, dan selalu tersenyum menyambut tamu dan klien korporasi di lobi utama kantor.'
+      },
+      {
+        id: 'lounge-gilang',
+        name: 'Gilang',
+        role: 'Staff Lounge',
+        dept: 'lounge',
+        nameTriggers: [/\bgilang\b/i],
+        topicTriggers: [/santai/i, /istirahat/i, /main\s*game/i, /rehat/i],
+        persona: 'Anda adalah Gilang, staf kantor yang santai. Anda suka rehat sejenak di sofa lounge sambil main konsol game atau bermain bersama maskot kucing Gitcat.'
+      },
+      {
+        id: 'staff-siti-jalan',
+        name: 'Siti',
+        role: 'Staff Keuangan',
+        dept: 'lounge',
+        nameTriggers: [/\bsiti\b/i],
+        topicTriggers: [/kas\s*kecil/i, /petty\s*cash/i],
+        persona: 'Anda adalah Siti, staf administrasi keuangan operasional yang rapi mengarsipkan kuitansi kas kecil dan nota operasional harian.'
+      },
+      {
+        id: 'biz-bagus',
+        name: 'Bagus',
+        role: 'Enterprise Sales & AI Assistant',
+        dept: 'product',
+        nameTriggers: [/\bbagus\b/i],
+        topicTriggers: [/\bsales\b/i, /\bdemo\b/i, /\bproposal\b/i, /\bkorporasi\b/i, /harga\s*paket/i],
+        persona: 'Anda adalah Bagus, Enterprise Sales Lead Seventhsoft. Anda supel, berwawasan luas tentang solusi akuntansi Seventhsoft, dan selalu siap membantu menghubungkan kebutuhan tim maupun klien.'
+      }
+    ];
+
+    // 1. Tentukan Siapa Pegawai yang Merespons
+    let targetEmp = null;
+
+    // Prioritas A: Disebut namanya secara eksplisit (e.g. "Doni", "Kevin", "Koko", "Mbak Nadia")
+    targetEmp = EMPLOYEES.find(e => e.nameTriggers && e.nameTriggers.some(rgx => rgx.test(text)));
+
+    // Prioritas B: Topik spesifik yang jelas (e.g. "slip gaji", "kopi", "server", "piutang")
+    if (!targetEmp) {
+      targetEmp = EMPLOYEES.find(e => e.topicTriggers && e.topicTriggers.some(rgx => rgx.test(text)));
     }
 
-    if (lower.includes('entry') || lower.includes('ocr') || lower.includes('invoice')) {
-      return {
-        empId: 'agent-entry',
-        name: 'AI-Agent 01',
-        role: 'Data Entry & OCR',
-        speech: `Modul ekstraksi invoice aktif. Perlindungan data pribadi NIK & NPWP (UU PDP) siap diterapkan pada setiap faktur masuk.`
-      };
+    // Prioritas C: Pertanyaan lanjutan / Follow-up (e.g. "kapan jadinya?", "bulan kemarin ada?", "siapa aja?")
+    if (!targetEmp && chatId) {
+      const lastEmpId = this.lastActiveEmployees.get(chatId);
+      if (lastEmpId) {
+        targetEmp = EMPLOYEES.find(e => e.id === lastEmpId);
+      }
     }
 
-    if (lower.includes('rekon') || lower.includes('bank')) {
-      return {
-        empId: 'agent-rekon',
-        name: 'AI-Agent 02',
-        role: 'Reconciliation Agent',
-        speech: `Status audit normal. Tidak ditemukan selisih nominal mencurigakan antara rekening koran BCA dan buku kas Seventhsoft.`
-      };
+    // Fallback default: Bagus (Enterprise Sales & AI Assistant)
+    if (!targetEmp) {
+      targetEmp = EMPLOYEES.find(e => e.id === 'biz-bagus') || EMPLOYEES[0];
     }
 
-    if (lower.includes('pajak') || lower.includes('ppn') || lower.includes('margin')) {
-      return {
-        empId: 'agent-pajak',
-        name: 'AI-Agent 03',
-        role: 'Tax & Reporting Analyst',
-        speech: `Perhitungan proyeksi PPN Keluaran vs Masukan terverifikasi seimbang. Margin laba kotor dalam batas aman.`
-      };
+    // Simpan konteks pegawai aktif untuk chat ini
+    if (chatId) {
+      this.lastActiveEmployees.set(chatId, targetEmp.id);
     }
 
-    // Coba tanyakan ke LLM Cerdas (DeepSeek / Gemini) untuk respon cerdas alami
+    // Ambil riwayat chat sebelumnya untuk chat ini
+    const chatHistory = (chatId ? this.chatHistories.get(chatId) : null) || [];
+
+    // 2. Tanyakan ke LLM Cerdas (DeepSeek / Gemini) dengan persona pegawai & riwayat percakapan
     try {
       const ai = await LLMService.askAI(text, {
-        characterName: 'Bagus',
-        characterRole: 'Enterprise Sales & AI Assistant Seventhsoft'
+        characterName: targetEmp.name,
+        characterRole: targetEmp.role,
+        personaDetails: `${targetEmp.persona}\n${timeContext}`,
+        history: chatHistory.slice(-8)
       });
+
       if (ai && ai.text) {
+        // Simpan pesan ke memori percakapan
+        chatHistory.push({ role: 'user', content: text });
+        chatHistory.push({ role: 'assistant', content: ai.text });
+        if (chatHistory.length > 20) chatHistory.splice(0, chatHistory.length - 20);
+        if (chatId) this.chatHistories.set(chatId, chatHistory);
+
         return {
-          empId: 'biz-bagus',
-          name: 'Bagus',
-          role: `AI Assistant (${ai.provider})`,
+          empId: targetEmp.id,
+          name: targetEmp.name,
+          role: targetEmp.role,
           speech: ai.text
         };
       }
     } catch (e) {
-      console.warn('LLM Service fallback triggered:', e.message);
+      console.warn('[TelegramBot] LLM Service error, beralih ke fallback cerdas:', e.message);
     }
 
-    // Default ramah jika LLM offline
+    // 3. Fallback Cerdas Kontekstual jika LLM offline (Bukan satu kalimat template kaku!)
+    let fallbackText = `Halo ${callerName}! Saya ${targetEmp.name} (${targetEmp.role}) dari Seventhsoft. Ada yang bisa saya bantu terkait tugas dan operasional hari ini?`;
+    if (targetEmp.id === 'staff-doni') {
+      fallbackText = `Halo ${callerName}! Terkait rekapitulasi slip gaji dan PPh 21 karyawan, proses perhitungan dan verifikasi potongan BPJS sedang berjalan tertib. Laporan disiapkan sebelum jadwal transfer per tanggal 25.`;
+    } else if (targetEmp.id === 'cafe-koko') {
+      fallbackText = `Siap ${callerName}! Kopi espresso dan aneka minuman segar siap diseduh di pantry. Mau dibikinkan latte atau americano hari ini?`;
+    } else if (targetEmp.id === 'staff-maya') {
+      fallbackText = `Siap ${callerName}. Jejak audit SHA-256 dan kepatuhan transaksi pembukuan General Ledger kami monitor secara berkala untuk menjaga integritas data.`;
+    }
+
     return {
-      empId: 'biz-bagus',
-      name: 'Bagus',
-      role: 'Enterprise Sales',
-      speech: `Baik ${callerName}! Seluruh 30 staf di Kantor AI Seventhsoft dalam keadaan aktif dan siap membantu. Bapak mau bicara dengan Doni, Yoga, Kevin, Sarah, atau siapa?`
+      empId: targetEmp.id,
+      name: targetEmp.name,
+      role: targetEmp.role,
+      speech: fallbackText
     };
   }
 
