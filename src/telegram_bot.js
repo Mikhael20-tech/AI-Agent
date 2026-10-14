@@ -1,5 +1,7 @@
 import { db } from './database.js';
 import { LLMService } from './llm_service.js';
+import { sendFileToTelegram } from './send_telegram_file.js';
+import { ReportGenerator } from './report_generator.js';
 
 export class TelegramBotService {
   constructor(eventBus) {
@@ -252,6 +254,28 @@ export class TelegramBotService {
               if (/traktir.*kopi|ngantri|antre|kopi\s*semua|kopi\s*bareng|ngopi\s*semua/i.test(rawText)) {
                 console.log(`[TELEGRAM EVENT] Triggering coffee queue event from ${fromUser?.first_name || 'Finance Lead'}`);
                 this.eventBus.emit('coffee_queue', { initiator: fromUser?.first_name || 'Finance Lead' });
+              }
+
+              // Deteksi jika user meminta file Excel / laporan / dokumen / rekap
+              const isRequestingFile = /(excel|xlsx|spreadsheet|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export.*excel|unduh.*excel|download.*excel|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel)/i.test(rawText);
+
+              if (isRequestingFile) {
+                try {
+                  console.log(`[TELEGRAM EXCEL EXPORT] Mengenerate file Excel untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+                  let reportType = 'all';
+                  if (/rekon|bank|mutasi/i.test(rawText)) reportType = 'reconciliation';
+                  else if (/pajak|ppn|pph/i.test(rawText)) reportType = 'tax';
+                  else if (/audit|log/i.test(rawText)) reportType = 'audit';
+                  else if (/draft|faktur|pembelian|invoice/i.test(rawText)) reportType = 'drafts';
+
+                  const excelPath = ReportGenerator.generateExcelReport(reportType);
+                  const caption = `📊 <b>Laporan Excel Seventhsoft (${reportType.toUpperCase()})</b>\nBerikut file spreadsheet yang diminta oleh ${fromUser?.first_name || 'Finance Lead'}. Data siap dianalisis.`;
+                  
+                  await sendFileToTelegram(excelPath, caption, chatId);
+                  console.log(`[TELEGRAM EXCEL EXPORT] File berhasil dikirim ke ${chatId}: ${excelPath}`);
+                } catch (fileErr) {
+                  console.error('Gagal mengirim file Excel otomatis ke Telegram:', fileErr.message);
+                }
               }
 
               const reply = await this.generateEmployeeResponse(rawText, fromUser, chatId);
@@ -573,8 +597,8 @@ export class TelegramBotService {
         role: 'Enterprise Sales & AI Assistant',
         dept: 'product',
         nameTriggers: [/\bbagus\b/i],
-        topicTriggers: [/\bsales\b/i, /\bdemo\b/i, /\bproposal\b/i, /\bkorporasi\b/i, /harga\s*paket/i],
-        persona: 'Anda adalah Bagus, Enterprise Sales Lead Seventhsoft. Anda supel, berwawasan luas tentang solusi akuntansi Seventhsoft, dan selalu siap membantu menghubungkan kebutuhan tim maupun klien.'
+        topicTriggers: [/\bsales\b/i, /\bdemo\b/i, /\bproposal\b/i, /\bkorporasi\b/i, /harga\s*paket/i, /excel/i, /laporan/i, /file/i, /dokumen/i],
+        persona: 'Anda adalah Bagus, Enterprise Sales Lead & AI Assistant Seventhsoft. Anda supel, berwawasan luas tentang modul Seventhsoft, dan memiliki akses penuh untuk membuat serta mengirimkan file laporan Excel/PDF langsung sebagai attachment dokumen di chat Telegram.'
       }
     ];
 
