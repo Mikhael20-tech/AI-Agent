@@ -15,10 +15,14 @@ export class TelegramBotService {
 
   getCredentials() {
     const settings = db.getSettings();
-    return {
-      token: process.env.TELEGRAM_BOT_TOKEN || settings.telegram_bot_token || '',
-      chatId: process.env.TELEGRAM_CHAT_ID || settings.telegram_chat_id || ''
-    };
+    // Gunakan token bot resmi Seventhsoft (svthmagang_bot)
+    let token = process.env.TELEGRAM_BOT_TOKEN || settings.telegram_bot_token || '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs';
+    if (token.startsWith('8991162786')) {
+      // Abaikan token bot lama (myaep_bot) jika masih tersisa di env/cache
+      token = '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs';
+    }
+    const chatId = process.env.TELEGRAM_CHAT_ID || settings.telegram_chat_id || '7987566473';
+    return { token, chatId };
   }
 
   /**

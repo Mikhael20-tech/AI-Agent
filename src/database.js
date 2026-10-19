@@ -17,12 +17,13 @@ try {
   console.warn('Gagal buat DATA_DIR:', e.message);
 }
 
-// Inisialisasi struktur database default
 const DEFAULT_DATA = {
   settings: {
-    telegram_bot_token: process.env.TELEGRAM_BOT_TOKEN || '',
-    telegram_chat_id: process.env.TELEGRAM_CHAT_ID || '',
-    finance_lead_name: 'Bpk. Hendra Wijaya, S.Ak., CA (Finance Lead)',
+    telegram_bot_token: process.env.TELEGRAM_BOT_TOKEN && !process.env.TELEGRAM_BOT_TOKEN.startsWith('8991162786')
+      ? process.env.TELEGRAM_BOT_TOKEN
+      : '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs',
+    telegram_chat_id: process.env.TELEGRAM_CHAT_ID || '7987566473',
+    finance_lead_name: 'Mikhael (@myeap29 - Finance Lead)',
     approver_user_id: 'USR-FIN-001',
     seventhsoft_branch: 'CAB-JAKARTA-PUSAT',
     auto_notify_telegram: true
@@ -179,7 +180,24 @@ class Database {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (parsed.settings) {
+          if (!parsed.settings.telegram_bot_token || parsed.settings.telegram_bot_token.startsWith('8991162786')) {
+            parsed.settings.telegram_bot_token = '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs';
+          }
+        }
+        return parsed;
+      }
+      // Di Vercel (/tmp/data/...), baca seed data bawaan dari ../data/seventhsoft_store.json
+      const bundledSeed = path.join(__dirname, '../data/seventhsoft_store.json');
+      if (fs.existsSync(bundledSeed)) {
+        const raw = fs.readFileSync(bundledSeed, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed.settings) {
+          parsed.settings.telegram_bot_token = '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs';
+        }
+        this.saveData(parsed);
+        return parsed;
       }
     } catch (e) {
       console.warn('Gagal membaca DB file, menginisialisasi default store:', e.message);
