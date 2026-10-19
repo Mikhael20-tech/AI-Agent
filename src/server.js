@@ -237,6 +237,21 @@ app.get('/api/audit-logs', (req, res) => {
   res.json(db.getAuditLogs());
 });
 
+// 7.1 Payroll (Modul Penggajian Seventhsoft)
+app.get('/api/payroll', (req, res) => {
+  res.json(db.getPayroll());
+});
+
+app.get('/api/payroll/download-pdf', async (req, res) => {
+  try {
+    const { ReportGenerator } = await import('./report_generator.js');
+    const pdfPath = await ReportGenerator.generatePayrollPdf();
+    res.download(pdfPath);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 8. Pengaturan & Telegram Config
 app.get('/api/settings', (req, res) => {
   res.json(db.getSettings());

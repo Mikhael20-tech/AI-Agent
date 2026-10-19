@@ -247,25 +247,46 @@ export class TelegramBotService {
           this.eventBus.emit('coffee_queue', { initiator: fromUser?.first_name || 'Finance Lead' });
         }
 
-        // Deteksi jika user meminta file Excel / laporan / dokumen / rekap
-        const isRequestingFile = /(excel|xlsx|spreadsheet|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export.*excel|unduh.*excel|download.*excel|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel)/i.test(rawText);
+        // Deteksi jika user meminta file / dokumen / rekap / pdf / excel
+        const isRequestingFile = /(excel|xlsx|spreadsheet|pdf|dokumen|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export.*excel|unduh|download|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel|minta.*pdf|kirim.*pdf|buatkan.*pdf)/i.test(rawText);
 
         if (isRequestingFile) {
           try {
-            console.log(`[TELEGRAM EXCEL EXPORT] Mengenerate file Excel untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
-            let reportType = 'all';
-            if (/rekon|bank|mutasi/i.test(rawText)) reportType = 'reconciliation';
-            else if (/pajak|ppn|pph/i.test(rawText)) reportType = 'tax';
-            else if (/audit|log/i.test(rawText)) reportType = 'audit';
-            else if (/draft|faktur|pembelian|invoice/i.test(rawText)) reportType = 'drafts';
+            const isPayroll = /\b(gaji|payroll|upah|slip|tunjangan|bpjs|pph\s*21)\b/i.test(rawText);
+            const wantsPdf = /\b(pdf|dokumen)\b/i.test(rawText);
 
-            const excelPath = ReportGenerator.generateExcelReport(reportType);
-            const caption = `📊 <b>Laporan Excel Seventhsoft (${reportType.toUpperCase()})</b>\nBerikut file spreadsheet yang diminta oleh ${fromUser?.first_name || 'Finance Lead'}. Data siap dianalisis.`;
-            
-            await sendFileToTelegram(excelPath, caption, chatId);
-            console.log(`[TELEGRAM EXCEL EXPORT] File berhasil dikirim ke ${chatId}: ${excelPath}`);
+            let filePath = '';
+            let caption = '';
+
+            if (isPayroll) {
+              if (wantsPdf) {
+                console.log(`[TELEGRAM PAYROLL PDF] Mengenerate file PDF rekap gaji untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+                filePath = await ReportGenerator.generatePayrollPdf();
+                caption = `📑 <b>Rekapitulasi Gaji Karyawan Seventhsoft (PDF)</b>\nPeriode: September 2026 (Bulan Kemarin)\nBerikut dokumen rekapitulasi gaji resmi yang disiapkan oleh Doni (Payroll Specialist) untuk Finance Lead.`;
+              } else {
+                console.log(`[TELEGRAM PAYROLL EXCEL] Mengenerate file Excel rekap gaji untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+                filePath = ReportGenerator.generatePayrollExcel();
+                caption = `📊 <b>Laporan Spreadsheet Payroll Seventhsoft (EXCEL)</b>\nPeriode: September 2026\nRekapitulasi slip gaji, tunjangan, potongan BPJS dan PPh 21 seluruh karyawan.`;
+              }
+            } else {
+              // Laporan transaksi umum
+              let reportType = 'all';
+              if (/rekon|bank|mutasi/i.test(rawText)) reportType = 'reconciliation';
+              else if (/pajak|ppn|pph/i.test(rawText)) reportType = 'tax';
+              else if (/audit|log/i.test(rawText)) reportType = 'audit';
+              else if (/draft|faktur|pembelian|invoice/i.test(rawText)) reportType = 'drafts';
+
+              console.log(`[TELEGRAM EXCEL EXPORT] Mengenerate file Excel untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+              filePath = ReportGenerator.generateExcelReport(reportType);
+              caption = `📊 <b>Laporan Excel Seventhsoft (${reportType.toUpperCase()})</b>\nBerikut file spreadsheet yang diminta oleh ${fromUser?.first_name || 'Finance Lead'}. Data siap dianalisis.`;
+            }
+
+            if (filePath) {
+              await sendFileToTelegram(filePath, caption, chatId);
+              console.log(`[TELEGRAM FILE SENT] File berhasil dikirim ke ${chatId}: ${filePath}`);
+            }
           } catch (fileErr) {
-            console.error('Gagal mengirim file Excel otomatis ke Telegram:', fileErr.message);
+            console.error('Gagal mengirim file otomatis ke Telegram:', fileErr.message);
           }
         }
 
@@ -688,7 +709,11 @@ export class TelegramBotService {
     // 3. Fallback Cerdas Kontekstual jika LLM offline (Bukan satu kalimat template kaku!)
     let fallbackText = `Halo ${callerName}! Saya ${targetEmp.name} (${targetEmp.role}) dari Seventhsoft. Ada yang bisa saya bantu terkait tugas dan operasional hari ini?`;
     if (targetEmp.id === 'staff-doni') {
-      fallbackText = `Halo ${callerName}! Terkait rekapitulasi slip gaji dan PPh 21 karyawan, proses perhitungan dan verifikasi potongan BPJS sedang berjalan tertib. Laporan disiapkan sebelum jadwal transfer per tanggal 25.`;
+      if (/gaji|payroll|rekap|pdf|slip|bulan\s*kemarin/i.test(text)) {
+        fallbackText = `Siap Pak ${callerName}! Dokumen rekapitulasi gaji karyawan periode September 2026 (bulan kemarin) sudah saya siapkan dan lampirkan langsung di chat ini ya Pak. Seluruh rincian BPJS dan PPh 21 sudah tervalidasi rapi.`;
+      } else {
+        fallbackText = `Halo ${callerName}! Saya Doni, Payroll Specialist Seventhsoft. Urusan slip gaji, potongan BPJS Ketenagakerjaan/Kesehatan, dan perhitungan PPh 21 karyawan siap saya bantu.`;
+      }
     } else if (targetEmp.id === 'cafe-koko') {
       fallbackText = `Siap ${callerName}! Kopi espresso dan aneka minuman segar siap diseduh di pantry. Mau dibikinkan latte atau americano hari ini?`;
     } else if (targetEmp.id === 'staff-maya') {

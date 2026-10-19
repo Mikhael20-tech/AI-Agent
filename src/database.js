@@ -137,6 +137,32 @@ const DEFAULT_DATA = {
       }
     ]
   },
+  payroll: {
+    period: 'September 2026',
+    period_label: '01 Sep 2026 - 30 Sep 2026 (Bulan Kemarin)',
+    cutoff_date: '2026-09-20',
+    payment_date: '2026-09-25',
+    disbursement_bank: 'BCA Corporate Payroll (Acc: 088-291-7721)',
+    coa_debet: '5-2100 (Beban Gaji & Upah Karyawan)',
+    coa_kredit: '1-1110 (Kas & Setara Kas Bank BCA)',
+    status: 'PAID & POSTED TO GL',
+    total_gross: 128450000,
+    total_bpjs: 3853500,
+    total_pph21: 6200000,
+    total_net: 118396500,
+    employees: [
+      { nip: 'EMP-001', name: 'Bagus Pratama', role: 'Enterprise Sales Lead', base_salary: 11500000, allowance: 3000000, gross: 14500000, bpjs: 435000, pph21: 750000, net: 13315000 },
+      { nip: 'EMP-002', name: 'Doni Saputra', role: 'Payroll Specialist', base_salary: 8000000, allowance: 1800000, gross: 9800000, bpjs: 294000, pph21: 420000, net: 9086000 },
+      { nip: 'EMP-003', name: 'Kevin Maulana', role: 'Lead Backend Engineer', base_salary: 13000000, allowance: 3000000, gross: 16000000, bpjs: 480000, pph21: 950000, net: 14570000 },
+      { nip: 'EMP-004', name: 'Maya Anggraini', role: 'Internal Audit Lead', base_salary: 12000000, allowance: 3000000, gross: 15000000, bpjs: 450000, pph21: 850000, net: 13700000 },
+      { nip: 'EMP-005', name: 'Rian Ardiansyah', role: 'GL Senior Accountant', base_salary: 9500000, allowance: 2000000, gross: 11500000, bpjs: 345000, pph21: 580000, net: 10575000 },
+      { nip: 'EMP-006', name: 'Nadia Kusuma', role: 'Tax & Compliance Lead', base_salary: 11000000, allowance: 3000000, gross: 14000000, bpjs: 420000, pph21: 780000, net: 12800000 },
+      { nip: 'EMP-007', name: 'Dimas Prasetyo', role: 'Financial Analyst', base_salary: 8500000, allowance: 2000000, gross: 10500000, bpjs: 315000, pph21: 520000, net: 9665000 },
+      { nip: 'EMP-008', name: 'Sarah Oktaviani', role: 'Billing & AR Specialist', base_salary: 7200000, allowance: 1600000, gross: 8800000, bpjs: 264000, pph21: 360000, net: 8176000 },
+      { nip: 'EMP-009', name: 'Koko Wicaksono', role: 'Barista Pantry & Lounge', base_salary: 4500000, allowance: 1000000, gross: 5500000, bpjs: 165000, pph21: 150000, net: 5185000 },
+      { nip: 'EMP-010', name: 'Budi Santoso', role: 'Office Ops & Logistics', base_salary: 4300000, allowance: 900000, gross: 5200000, bpjs: 156000, pph21: 140000, net: 4904000 }
+    ]
+  },
   audit_logs: [
     {
       id: 'AUD-LOG-0001',
@@ -340,6 +366,10 @@ class Database {
 
   getTaxSummary() {
     return this.data.tax_summary;
+  }
+
+  getPayroll() {
+    return this.data.payroll || DEFAULT_DATA.payroll;
   }
 
   getSettings() {
