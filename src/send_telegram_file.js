@@ -11,14 +11,11 @@ dotenv.config();
  * @param {string} [customChatId] - (Opsional) Chat ID tujuan
  */
 export async function sendFileToTelegram(filePath, caption = '', customChatId = null) {
-  let token = process.env.TELEGRAM_BOT_TOKEN || '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs';
-  if (token.startsWith('8991162786')) {
-    token = '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs';
-  }
-  const chatId = customChatId || process.env.TELEGRAM_CHAT_ID || '7987566473';
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = customChatId || process.env.TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) {
-    throw new Error('TELEGRAM_BOT_TOKEN atau TELEGRAM_CHAT_ID belum dikonfigurasi di file .env');
+    throw new Error('TELEGRAM_BOT_TOKEN atau TELEGRAM_CHAT_ID belum dikonfigurasi di file .env / Vercel Environment Variables');
   }
 
   const resolvedPath = path.resolve(filePath);

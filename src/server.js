@@ -43,6 +43,7 @@ const telegramService = new TelegramBotService(eventBus);
 const agent1 = new TransactionDataEntryAgent(eventBus);
 const agent2 = new ReconciliationAuditAgent(eventBus);
 const agent3 = new TaxReportingAnalystAgent(eventBus);
+telegramService.setAgent1(agent1);
 
 // Mulai polling Telegram jika token disiapkan (otomatis diskip di Vercel)
 telegramService.startPolling();
@@ -247,6 +248,18 @@ app.get('/api/payroll/download-pdf', async (req, res) => {
     const { ReportGenerator } = await import('./report_generator.js');
     const pdfPath = await ReportGenerator.generatePayrollPdf();
     res.download(pdfPath);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7.2 Export Excel Laporan Seventhsoft
+app.get('/api/export-excel', async (req, res) => {
+  try {
+    const { ReportGenerator } = await import('./report_generator.js');
+    const type = req.query.type || 'all';
+    const excelPath = ReportGenerator.generateExcelReport(type);
+    res.download(excelPath);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

@@ -4,8 +4,9 @@ import { sendFileToTelegram } from './send_telegram_file.js';
 import { ReportGenerator } from './report_generator.js';
 
 export class TelegramBotService {
-  constructor(eventBus) {
+  constructor(eventBus, agent1 = null) {
     this.eventBus = eventBus;
+    this.agent1 = agent1;
     this.pollInterval = null;
     this.lastUpdateId = 0;
     this.isPolling = false;
@@ -13,16 +14,27 @@ export class TelegramBotService {
     this.lastActiveEmployees = new Map(); // chatId -> empId
   }
 
+  setAgent1(agent1) {
+    this.agent1 = agent1;
+  }
+
   getCredentials() {
     const settings = db.getSettings();
-    // Gunakan token bot resmi Seventhsoft (svthmagang_bot)
-    let token = process.env.TELEGRAM_BOT_TOKEN || settings.telegram_bot_token || '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs';
-    if (token.startsWith('8991162786')) {
-      // Abaikan token bot lama (myaep_bot) jika masih tersisa di env/cache
-      token = '8900772530:AAFcaiKlDAI1gjyNgZDJH-imnqpj0k3KCGs';
-    }
-    const chatId = process.env.TELEGRAM_CHAT_ID || settings.telegram_chat_id || '7987566473';
+    const token = process.env.TELEGRAM_BOT_TOKEN || settings.telegram_bot_token || '';
+    const chatId = process.env.TELEGRAM_CHAT_ID || settings.telegram_chat_id || '';
     return { token, chatId };
+  }
+
+  async sendChatAction(chatId, action = 'typing') {
+    const { token } = this.getCredentials();
+    if (!token || !chatId) return;
+    try {
+      await fetch(`https://api.telegram.org/bot${token}/sendChatAction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, action })
+      });
+    } catch (e) {}
   }
 
   /**
@@ -228,6 +240,38 @@ export class TelegramBotService {
         }
       }
 
+      // Handle pengiriman invoice berupa foto atau dokumen langsung dari Telegram (OCR & Auto-Drafting)
+      if (update.message && (update.message.photo || update.message.document)) {
+        const chatId = update.message.chat.id;
+        const fromUser = update.message.from;
+        const caption = update.message.caption || '';
+        await this.sendChatAction(chatId, 'typing');
+
+        await this.sendCustomMessage(chatId, `📸 <b>[AI AGENT 1: SCAN INVOICE DITERIMA]</b>\nDokumen tagihan diterima dari <b>${fromUser?.first_name || 'Finance Lead'}</b>.\n\n⚙️ <i>Memulai ekstraksi OCR, verifikasi DPP & PPN 11%, masking data pribadi (UU No. 27/2022), dan perumusan draf transaksi Seventhsoft...</i>`);
+
+        try {
+          const docName = update.message.document?.file_name || `Nota_Scan_${Date.now()}.jpg`;
+          const rawDocText = caption || `Faktur Pembelian Pengadaan Operasional ${docName}`;
+
+          if (this.agent1) {
+            const { draft } = await this.agent1.processInvoiceDocument({
+              fileName: docName,
+              rawContent: rawDocText,
+              docType: 'PEMBELIAN'
+            });
+
+            // Kirim notifikasi otorisasi lengkap dengan tombol Approve & Reject
+            await this.notifyPendingApproval(draft);
+          } else {
+            await this.sendCustomMessage(chatId, `⚠️ Agent 1 sedang offline.`);
+          }
+        } catch (scanErr) {
+          console.error('Gagal memproses dokumen invoice via Telegram:', scanErr.message);
+          await this.sendCustomMessage(chatId, `⚠️ Gagal membaca dokumen: ${scanErr.message}`);
+        }
+        return;
+      }
+
       // Handle pesan chat teks (Interaksi dialog dua arah dengan 30 pegawai)
       if (update.message && update.message.text) {
         const rawText = update.message.text.trim();
@@ -237,18 +281,19 @@ export class TelegramBotService {
         console.log(`[TELEGRAM CHAT MASUK] Dari ${fromUser?.first_name || 'User'} (${chatId}): "${rawText}"`);
 
         if (rawText === '/start') {
-          await this.sendCustomMessage(chatId, `🤖 <b>Halo Finance Lead (${fromUser.first_name || 'Bpk. Mikhael'})!</b>\n\nSelamat datang di Bot Resmi <b>AI Agent Akuntansi Seventhsoft</b>.\n\n✨ <b>Apa saja yang bisa Anda lakukan:</b>\n1. Menerima & mengotorisasi draf transaksi secara aman <i>(Four-Eyes Principle)</i>.\n2. Mengobrol langsung dengan 30 staf kantor! (Contoh: ketik <i>"Gimana kabarmu Bagus"</i>, <i>"Halo Kevin"</i>, <i>"Koko minta kopi"</i>, atau <i>"Budi antar berkas"</i>).`);
+          await this.sendCustomMessage(chatId, `🤖 <b>Halo Finance Lead (${fromUser.first_name || 'Bpk. Mikhael'})!</b>\n\nSelamat datang di Bot Resmi <b>AI Agent Akuntansi Seventhsoft</b>.\n\n✨ <b>Apa saja yang bisa Anda lakukan:</b>\n1. Menerima & mengotorisasi draf transaksi secara aman <i>(Four-Eyes Principle)</i>.\n2. Mengirim foto struk/nota/invoice langsung di chat ini untuk di-OCR dan dibuatkan draf transaksi otomatis.\n3. Mengobrol langsung dengan 30 staf kantor! (Contoh: ketik <i>"Gimana kabarmu Bagus"</i>, <i>"Doni minta rekap gaji pdf"</i>, <i>"Koko minta kopi"</i>, atau <i>"Budi antar berkas"</i>).`);
           return;
         }
+
+        // Tampilkan indikator mengetik / mengunggah file di Telegram
+        const isRequestingFile = /(excel|xlsx|spreadsheet|pdf|dokumen|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export.*excel|unduh|download|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel|minta.*pdf|kirim.*pdf|buatkan.*pdf)/i.test(rawText);
+        await this.sendChatAction(chatId, isRequestingFile ? 'upload_document' : 'typing');
 
         // Deteksi jika user mengajak traktir kopi / ngantri
         if (/traktir.*kopi|ngantri|antre|kopi\s*semua|kopi\s*bareng|ngopi\s*semua/i.test(rawText)) {
           console.log(`[TELEGRAM EVENT] Triggering coffee queue event from ${fromUser?.first_name || 'Finance Lead'}`);
           this.eventBus.emit('coffee_queue', { initiator: fromUser?.first_name || 'Finance Lead' });
         }
-
-        // Deteksi jika user meminta file / dokumen / rekap / pdf / excel
-        const isRequestingFile = /(excel|xlsx|spreadsheet|pdf|dokumen|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export.*excel|unduh|download|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel|minta.*pdf|kirim.*pdf|buatkan.*pdf)/i.test(rawText);
 
         if (isRequestingFile) {
           try {
