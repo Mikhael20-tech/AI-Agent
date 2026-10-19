@@ -16,17 +16,21 @@ import { TelegramBotService } from './telegram_bot.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const isVercel = !!process.env.VERCEL;
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 3000;
 const eventBus = new EventEmitter();
 
-// Setup Multer untuk upload invoice
-const UPLOAD_DIR = path.join(__dirname, '../uploads');
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Setup Multer untuk upload invoice (Gunakan /tmp di Vercel agar tidak EROFS read-only)
+const UPLOAD_DIR = isVercel ? '/tmp/uploads' : path.join(__dirname, '../uploads');
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+} catch (e) {
+  console.warn('Gagal buat UPLOAD_DIR:', e.message);
 }
 const upload = multer({ dest: UPLOAD_DIR });
 
@@ -40,11 +44,11 @@ const agent1 = new TransactionDataEntryAgent(eventBus);
 const agent2 = new ReconciliationAuditAgent(eventBus);
 const agent3 = new TaxReportingAnalystAgent(eventBus);
 
-// Mulai polling Telegram jika token disiapkan
+// Mulai polling Telegram jika token disiapkan (otomatis diskip di Vercel)
 telegramService.startPolling();
 
 // ============================================================================
-// WEBSOCKET BROADCAST SYSTEM
+// WEBSOCKET BROADCAST SYSTEM (Aktif jika di lingkungan server mandiri / Localhost)
 // ============================================================================
 const connectedClients = new Set();
 let lastEmployeeSpeech = {
@@ -54,26 +58,30 @@ let lastEmployeeSpeech = {
   speech: 'Baik Pak Mikhael! Seluruh 30 staf di Kantor AI Seventhsoft dalam keadaan aktif dan siap membantu.'
 };
 
-wss.on('connection', (ws) => {
-  connectedClients.add(ws);
-  console.log(`[WS] Client terhubung. Total klien aktif: ${connectedClients.size}`);
+let wss = null;
+if (!isVercel) {
+  wss = new WebSocketServer({ server });
+  wss.on('connection', (ws) => {
+    connectedClients.add(ws);
+    console.log(`[WS] Client terhubung. Total klien aktif: ${connectedClients.size}`);
 
-  // Kirim status awal ke dashboard klien baru
-  ws.send(JSON.stringify({
-    type: 'INIT_STATE',
-    avatar: { state: 'idle', speech: 'Halo, saya AI Accounting Assistant Seventhsoft. Sistem siap menerima invoice.' },
-    drafts: db.getDrafts(),
-    audit_logs: db.getAuditLogs().slice(0, 15),
-    reconciliation: db.getReconciliation(),
-    tax_summary: db.getTaxSummary(),
-    settings: db.getSettings(),
-    recent_speech: lastEmployeeSpeech
-  }));
+    // Kirim status awal ke dashboard klien baru
+    ws.send(JSON.stringify({
+      type: 'INIT_STATE',
+      avatar: { state: 'idle', speech: 'Halo, saya AI Accounting Assistant Seventhsoft. Sistem siap menerima invoice.' },
+      drafts: db.getDrafts(),
+      audit_logs: db.getAuditLogs().slice(0, 15),
+      reconciliation: db.getReconciliation(),
+      tax_summary: db.getTaxSummary(),
+      settings: db.getSettings(),
+      recent_speech: lastEmployeeSpeech
+    }));
 
-  ws.on('close', () => {
-    connectedClients.delete(ws);
+    ws.on('close', () => {
+      connectedClients.delete(ws);
+    });
   });
-});
+}
 
 function broadcast(eventType, data) {
   const payload = JSON.stringify({ type: eventType, data, timestamp: new Date().toISOString() });

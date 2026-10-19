@@ -5,11 +5,15 @@ import { db } from './database.js';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const EXPORTS_DIR = path.join(__dirname, '../uploads/reports');
+const isVercel = !!process.env.VERCEL;
+const EXPORTS_DIR = isVercel ? '/tmp/reports' : path.join(__dirname, '../uploads/reports');
 
-if (!fs.existsSync(EXPORTS_DIR)) {
-  fs.mkdirSync(EXPORTS_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(EXPORTS_DIR)) {
+    fs.mkdirSync(EXPORTS_DIR, { recursive: true });
+  }
+} catch (e) {
+  console.warn('Gagal buat EXPORTS_DIR:', e.message);
 }
 
 export class ReportGenerator {
