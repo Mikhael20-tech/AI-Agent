@@ -181,9 +181,123 @@ export class TelegramBotService {
   }
 
   /**
+   * Memproses satu update objek dari Telegram (baik via Long-Polling maupun Webhook)
+   */
+  async processUpdate(update) {
+    const { token } = this.getCredentials();
+    if (!token || !update) return;
+
+    try {
+      // Handle klik inline button
+      if (update.callback_query) {
+        const cq = update.callback_query;
+        const result = await this.handleCallbackAction(cq.data, cq.from);
+
+        let toastText = 'Aksi berhasil diproses';
+        if (result.success) {
+          toastText = result.action === 'APPROVED' ? '✅ Otorisasi Disetujui (Posting GL)!' : '❌ Draft Ditolak (Perlu Revisi)';
+        } else {
+          toastText = `⚠️ ${result.message || 'Draft sudah diproses sebelumnya'}`;
+        }
+
+        // Jawab callback query Telegram agar spinner berhenti & tampilkan pesan yang benar
+        await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            callback_query_id: cq.id,
+            text: toastText
+          })
+        });
+
+        // Kirim pesan status konfirmasi ke chat jika berhasil
+        if (result.success && result.text) {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: cq.message.chat.id,
+              text: result.text,
+              parse_mode: 'HTML'
+            })
+          });
+        }
+      }
+
+      // Handle pesan chat teks (Interaksi dialog dua arah dengan 30 pegawai)
+      if (update.message && update.message.text) {
+        const rawText = update.message.text.trim();
+        const chatId = update.message.chat.id;
+        const fromUser = update.message.from;
+
+        console.log(`[TELEGRAM CHAT MASUK] Dari ${fromUser?.first_name || 'User'} (${chatId}): "${rawText}"`);
+
+        if (rawText === '/start') {
+          await this.sendCustomMessage(chatId, `🤖 <b>Halo Finance Lead (${fromUser.first_name || 'Bpk. Mikhael'})!</b>\n\nSelamat datang di Bot Resmi <b>AI Agent Akuntansi Seventhsoft</b>.\n\n✨ <b>Apa saja yang bisa Anda lakukan:</b>\n1. Menerima & mengotorisasi draf transaksi secara aman <i>(Four-Eyes Principle)</i>.\n2. Mengobrol langsung dengan 30 staf kantor! (Contoh: ketik <i>"Gimana kabarmu Bagus"</i>, <i>"Halo Kevin"</i>, <i>"Koko minta kopi"</i>, atau <i>"Budi antar berkas"</i>).`);
+          return;
+        }
+
+        // Deteksi jika user mengajak traktir kopi / ngantri
+        if (/traktir.*kopi|ngantri|antre|kopi\s*semua|kopi\s*bareng|ngopi\s*semua/i.test(rawText)) {
+          console.log(`[TELEGRAM EVENT] Triggering coffee queue event from ${fromUser?.first_name || 'Finance Lead'}`);
+          this.eventBus.emit('coffee_queue', { initiator: fromUser?.first_name || 'Finance Lead' });
+        }
+
+        // Deteksi jika user meminta file Excel / laporan / dokumen / rekap
+        const isRequestingFile = /(excel|xlsx|spreadsheet|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export.*excel|unduh.*excel|download.*excel|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel)/i.test(rawText);
+
+        if (isRequestingFile) {
+          try {
+            console.log(`[TELEGRAM EXCEL EXPORT] Mengenerate file Excel untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+            let reportType = 'all';
+            if (/rekon|bank|mutasi/i.test(rawText)) reportType = 'reconciliation';
+            else if (/pajak|ppn|pph/i.test(rawText)) reportType = 'tax';
+            else if (/audit|log/i.test(rawText)) reportType = 'audit';
+            else if (/draft|faktur|pembelian|invoice/i.test(rawText)) reportType = 'drafts';
+
+            const excelPath = ReportGenerator.generateExcelReport(reportType);
+            const caption = `📊 <b>Laporan Excel Seventhsoft (${reportType.toUpperCase()})</b>\nBerikut file spreadsheet yang diminta oleh ${fromUser?.first_name || 'Finance Lead'}. Data siap dianalisis.`;
+            
+            await sendFileToTelegram(excelPath, caption, chatId);
+            console.log(`[TELEGRAM EXCEL EXPORT] File berhasil dikirim ke ${chatId}: ${excelPath}`);
+          } catch (fileErr) {
+            console.error('Gagal mengirim file Excel otomatis ke Telegram:', fileErr.message);
+          }
+        }
+
+        const reply = await this.generateEmployeeResponse(rawText, fromUser, chatId);
+        if (reply) {
+          console.log(`[TELEGRAM CHAT BALAS] Ke ${chatId} | ${reply.name}: "${reply.speech}"`);
+
+          // Pancarkan event ke Virtual Office via WebSocket (jika ada client terhubung)
+          this.eventBus.emit('employee_speech', {
+            empId: reply.empId,
+            name: reply.name,
+            role: reply.role,
+            speech: reply.speech,
+            fromUser: fromUser?.first_name || 'Finance Lead'
+          });
+
+          // Kirim balasan Telegram
+          await this.sendCustomMessage(chatId, `💬 <b>${reply.name} (${reply.role}):</b>\n"${reply.speech}"`);
+        }
+      }
+    } catch (err) {
+      console.error('Error processing Telegram update:', err.message);
+    }
+  }
+
+  /**
    * Background polling untuk menerima respons klik tombol dari Telegram nyata
+   * (Digunakan saat run di Localhost atau VPS yang menyala 24/7)
    */
   startPolling() {
+    // Jangan polling jika berjalan di serverless environment seperti Vercel
+    if (process.env.VERCEL) {
+      console.log('Environment Vercel terdeteksi: Long-Polling dinonaktifkan (Gunakan Webhook Telegram)');
+      return;
+    }
+
     const { token } = this.getCredentials();
     if (!token || this.isPolling) return;
 
@@ -200,101 +314,7 @@ export class TelegramBotService {
         if (data.ok && Array.isArray(data.result)) {
           for (const update of data.result) {
             this.lastUpdateId = update.update_id;
-
-            // Handle klik inline button
-            if (update.callback_query) {
-              const cq = update.callback_query;
-              const result = await this.handleCallbackAction(cq.data, cq.from);
-
-              let toastText = 'Aksi berhasil diproses';
-              if (result.success) {
-                toastText = result.action === 'APPROVED' ? '✅ Otorisasi Disetujui (Posting GL)!' : '❌ Draft Ditolak (Perlu Revisi)';
-              } else {
-                toastText = `⚠️ ${result.message || 'Draft sudah diproses sebelumnya'}`;
-              }
-
-              // Jawab callback query Telegram agar spinner berhenti & tampilkan pesan yang benar
-              await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  callback_query_id: cq.id,
-                  text: toastText
-                })
-              });
-
-              // Kirim pesan status konfirmasi ke chat jika berhasil
-              if (result.success && result.text) {
-                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    chat_id: cq.message.chat.id,
-                    text: result.text,
-                    parse_mode: 'HTML'
-                  })
-                });
-              }
-            }
-
-            // Handle pesan chat teks (Interaksi dialog dua arah dengan 30 pegawai)
-            if (update.message && update.message.text) {
-              const rawText = update.message.text.trim();
-              const chatId = update.message.chat.id;
-              const fromUser = update.message.from;
-
-              console.log(`[TELEGRAM CHAT MASUK] Dari ${fromUser?.first_name || 'User'} (${chatId}): "${rawText}"`);
-
-              if (rawText === '/start') {
-                await this.sendCustomMessage(chatId, `🤖 <b>Halo Finance Lead (${fromUser.first_name || 'Bpk. Mikhael'})!</b>\n\nSelamat datang di Bot Resmi <b>AI Agent Akuntansi Seventhsoft</b>.\n\n✨ <b>Apa saja yang bisa Anda lakukan:</b>\n1. Menerima & mengotorisasi draf transaksi secara aman <i>(Four-Eyes Principle)</i>.\n2. Mengobrol langsung dengan 30 staf kantor! (Contoh: ketik <i>"Gimana kabarmu Bagus"</i>, <i>"Halo Kevin"</i>, <i>"Koko minta kopi"</i>, atau <i>"Budi antar berkas"</i>).`);
-                continue;
-              }
-
-              // Deteksi jika user mengajak traktir kopi / ngantri
-              if (/traktir.*kopi|ngantri|antre|kopi\s*semua|kopi\s*bareng|ngopi\s*semua/i.test(rawText)) {
-                console.log(`[TELEGRAM EVENT] Triggering coffee queue event from ${fromUser?.first_name || 'Finance Lead'}`);
-                this.eventBus.emit('coffee_queue', { initiator: fromUser?.first_name || 'Finance Lead' });
-              }
-
-              // Deteksi jika user meminta file Excel / laporan / dokumen / rekap
-              const isRequestingFile = /(excel|xlsx|spreadsheet|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export.*excel|unduh.*excel|download.*excel|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel)/i.test(rawText);
-
-              if (isRequestingFile) {
-                try {
-                  console.log(`[TELEGRAM EXCEL EXPORT] Mengenerate file Excel untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
-                  let reportType = 'all';
-                  if (/rekon|bank|mutasi/i.test(rawText)) reportType = 'reconciliation';
-                  else if (/pajak|ppn|pph/i.test(rawText)) reportType = 'tax';
-                  else if (/audit|log/i.test(rawText)) reportType = 'audit';
-                  else if (/draft|faktur|pembelian|invoice/i.test(rawText)) reportType = 'drafts';
-
-                  const excelPath = ReportGenerator.generateExcelReport(reportType);
-                  const caption = `📊 <b>Laporan Excel Seventhsoft (${reportType.toUpperCase()})</b>\nBerikut file spreadsheet yang diminta oleh ${fromUser?.first_name || 'Finance Lead'}. Data siap dianalisis.`;
-                  
-                  await sendFileToTelegram(excelPath, caption, chatId);
-                  console.log(`[TELEGRAM EXCEL EXPORT] File berhasil dikirim ke ${chatId}: ${excelPath}`);
-                } catch (fileErr) {
-                  console.error('Gagal mengirim file Excel otomatis ke Telegram:', fileErr.message);
-                }
-              }
-
-              const reply = await this.generateEmployeeResponse(rawText, fromUser, chatId);
-              if (reply) {
-                console.log(`[TELEGRAM CHAT BALAS] Ke ${chatId} | ${reply.name}: "${reply.speech}"`);
-
-                // Pancarkan event ke Virtual Office via WebSocket
-                this.eventBus.emit('employee_speech', {
-                  empId: reply.empId,
-                  name: reply.name,
-                  role: reply.role,
-                  speech: reply.speech,
-                  fromUser: fromUser?.first_name || 'Finance Lead'
-                });
-
-                // Kirim balasan Telegram
-                await this.sendCustomMessage(chatId, `💬 <b>${reply.name} (${reply.role}):</b>\n"${reply.speech}"`);
-              }
-            }
+            await this.processUpdate(update);
           }
         }
       } catch (err) {

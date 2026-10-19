@@ -287,15 +287,67 @@ app.post('/api/test-telegram', async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`🚀 AI AGENT AKUNTANSI SEVENTHSOFT AKTIF PADA PORT ${PORT}`);
-  console.log(`📡 URL Web: http://localhost:${PORT}`);
-  console.log(`🤖 Agent 1: Data Entry & Drafting (Four-Eyes Protected)`);
-  console.log(`🔍 Agent 2: Reconciliation & Audit (Bank vs Kas GL)`);
-  console.log(`📊 Agent 3: Tax & Reporting Analyst (PPN/PPh & HPP)`);
-  console.log(`🔒 Kepatuhan: UU PDP No. 27/2022, UU ITE, UU KUP`);
-  console.log(`=======================================================`);
+// 11. Telegram Webhook Endpoint (Untuk Vercel / Cloud Serverless)
+app.post('/api/telegram-webhook', async (req, res) => {
+  try {
+    if (req.body) {
+      await telegramService.processUpdate(req.body);
+    }
+    res.status(200).send('OK');
+  } catch (err) {
+    console.error('[WEBHOOK ERROR]:', err.message);
+    res.status(500).send('ERR');
+  }
 });
+
+// 12. Helper Endpoint untuk Daftarkan / Hapus Webhook Telegram Otomatis
+app.get('/api/telegram/setup-webhook', async (req, res) => {
+  try {
+    const { token } = telegramService.getCredentials();
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Token Telegram belum diatur!' });
+    }
+
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    const webhookUrl = `${protocol}://${host}/api/telegram-webhook`;
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+    const data = await response.json();
+
+    res.json({
+      success: data.ok,
+      registeredUrl: webhookUrl,
+      telegramResponse: data
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/telegram/webhook-info', async (req, res) => {
+  try {
+    const { token } = telegramService.getCredentials();
+    if (!token) return res.status(400).json({ success: false, error: 'Token belum diatur!' });
+    const response = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`=======================================================`);
+    console.log(`🚀 AI AGENT AKUNTANSI SEVENTHSOFT AKTIF PADA PORT ${PORT}`);
+    console.log(`📡 URL Web: http://localhost:${PORT}`);
+    console.log(`🤖 Agent 1: Data Entry & Drafting (Four-Eyes Protected)`);
+    console.log(`🔍 Agent 2: Reconciliation & Audit (Bank vs Kas GL)`);
+    console.log(`📊 Agent 3: Tax & Reporting Analyst (PPN/PPh & HPP)`);
+    console.log(`🔒 Kepatuhan: UU PDP No. 27/2022, UU ITE, UU KUP`);
+    console.log(`=======================================================`);
+  });
+}
 
 export default app;
