@@ -2,8 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import { SQLiteStore } from './sqlite_db.js';
 
 const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const isVercel = !!process.env.VERCEL;
 const DATA_DIR = isVercel ? '/tmp/data' : path.join(__dirname, '../data');
 const DB_FILE = path.join(DATA_DIR, 'seventhsoft_store.json');
@@ -201,29 +203,37 @@ class Database {
   }
 
   loadData() {
+    let parsed = null;
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
-        return JSON.parse(raw);
-      }
-      // Di Vercel (/tmp/data/...), baca seed data bawaan dari ../data/seventhsoft_store.json
-      const bundledSeed = path.join(__dirname, '../data/seventhsoft_store.json');
-      if (fs.existsSync(bundledSeed)) {
-        const raw = fs.readFileSync(bundledSeed, 'utf8');
-        const parsed = JSON.parse(raw);
-        this.saveData(parsed);
-        return parsed;
+        parsed = JSON.parse(raw);
+      } else {
+        const bundledSeed = path.join(__dirname, '../data/seventhsoft_store.json');
+        if (fs.existsSync(bundledSeed)) {
+          const raw = fs.readFileSync(bundledSeed, 'utf8');
+          parsed = JSON.parse(raw);
+          this.saveData(parsed);
+        }
       }
     } catch (e) {
       console.warn('Gagal membaca DB file, menginisialisasi default store:', e.message);
     }
-    this.saveData(DEFAULT_DATA);
-    return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    if (!parsed) {
+      parsed = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      this.saveData(parsed);
+    }
+
+    // Sinkronisasi ke SQLite
+    SQLiteStore.syncAllFromJSON(parsed);
+    return parsed;
   }
 
   saveData(data = this.data) {
     try {
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+      // Sinkronisasi data ke database relasional SQLite
+      SQLiteStore.syncAllFromJSON(data);
     } catch (e) {
       console.error('Error saat menyimpan ke DB:', e.message);
     }

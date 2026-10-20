@@ -203,13 +203,101 @@ export class ReportGenerator {
   }
 
   /**
+   * Menghasilkan file Excel (.xlsx) Rekapitulasi Penjualan & Omset Aplikasi Seventhsoft
+   */
+  static generateSalesReportExcel() {
+    const wb = XLSX.utils.book_new();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+    const salesRows = [
+      {
+        'No': 1,
+        'Paket / Modul Software': 'Seventhsoft Cloud Enterprise (50 User)',
+        'Klien': 'PT Indah Makmur Logistik',
+        'Sales Representative': 'Bagus Pratama',
+        'Qty': 2,
+        'Harga Satuan (Rp)': 180000000,
+        'Total Nilai (Rp)': 360000000,
+        'Status Closing': 'WON / CLOSED',
+        'Bulan': 'September 2026'
+      },
+      {
+        'No': 2,
+        'Paket / Modul Software': 'Seventhsoft ERP Retail Multi-Cabang',
+        'Klien': 'CV Jaya Abadi Perkasa',
+        'Sales Representative': 'Bagus Pratama',
+        'Qty': 4,
+        'Harga Satuan (Rp)': 75000000,
+        'Total Nilai (Rp)': 300000000,
+        'Status Closing': 'WON / CLOSED',
+        'Bulan': 'September 2026'
+      },
+      {
+        'No': 3,
+        'Paket / Modul Software': 'Seventhsoft Accounting Pro (10 User)',
+        'Klien': 'PT Sumber Rejeki Finance',
+        'Sales Representative': 'Cindy Oktavia',
+        'Qty': 5,
+        'Harga Satuan (Rp)': 45000000,
+        'Total Nilai (Rp)': 225000000,
+        'Status Closing': 'WON / CLOSED',
+        'Bulan': 'September 2026'
+      },
+      {
+        'No': 4,
+        'Paket / Modul Software': 'Modul Add-on Payroll & E-Faktur DJP',
+        'Klien': 'PT Cahaya Manufaktur Mandiri',
+        'Sales Representative': 'Randy Setiawan',
+        'Qty': 6,
+        'Harga Satuan (Rp)': 25000000,
+        'Total Nilai (Rp)': 150000000,
+        'Status Closing': 'WON / CLOSED',
+        'Bulan': 'September 2026'
+      },
+      {
+        'No': 5,
+        'Paket / Modul Software': 'Implementasi, Training & Custom Report',
+        'Klien': 'PT Prima Multi Graha',
+        'Sales Representative': 'Bagus Pratama',
+        'Qty': 3,
+        'Harga Satuan (Rp)': 55000000,
+        'Total Nilai (Rp)': 165000000,
+        'Status Closing': 'WON / CLOSED',
+        'Bulan': 'September 2026'
+      }
+    ];
+
+    const summaryRows = [
+      { 'Indikator': 'Total Nilai Penjualan (Omset)', 'Nilai': 'Rp 1.200.000.000 (1,2 Miliar)' },
+      { 'Indikator': 'Target Bulanan', 'Nilai': 'Rp 1.000.000.000' },
+      { 'Indikator': 'Persentase Pencapaian Target', 'Nilai': '120% (Exceeded Target)' },
+      { 'Indikator': 'Top Sales Performer', 'Nilai': 'Bagus Pratama (Total Closing: Rp 825.000.000)' },
+      { 'Indikator': 'Periode Laporan', 'Nilai': 'September 2026 (Bulan Kemarin)' }
+    ];
+
+    const wsSales = XLSX.utils.json_to_sheet(salesRows);
+    const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan Eksekutif');
+    XLSX.utils.book_append_sheet(wb, wsSales, 'Rincian Penjualan');
+
+    const fileName = `Rekap_Penjualan_Seventhsoft_September_2026_${timestamp}.xlsx`;
+    const filePath = path.join(EXPORTS_DIR, fileName);
+    XLSX.writeFile(wb, filePath);
+    return filePath;
+  }
+
+  /**
    * Menghasilkan file Excel (.xlsx) komprehensif dari database Seventhsoft
-   * @param {string} type - 'all', 'drafts', 'reconciliation', 'tax', 'audit', 'payroll'
+   * @param {string} type - 'all', 'drafts', 'reconciliation', 'tax', 'audit', 'payroll', 'sales'
    * @returns {string} - Absolute path file Excel yang dihasilkan
    */
   static generateExcelReport(type = 'all') {
     if (type === 'payroll' || type === 'gaji') {
       return this.generatePayrollExcel();
+    }
+    if (type === 'sales' || type === 'penjualan') {
+      return this.generateSalesReportExcel();
     }
 
     const wb = XLSX.utils.book_new();
@@ -298,5 +386,208 @@ export class ReportGenerator {
 
     XLSX.writeFile(wb, filePath);
     return filePath;
+  }
+
+  /**
+   * Menghasilkan file gambar grafik visual (.png) menggunakan QuickChart engine
+   * @param {string} type - 'region' | 'product' | 'trend'
+   * @param {string} [contextText] - Konteks teks tambahan
+   * @returns {Promise<string|null>} - Absolute path file gambar .png
+   */
+  static async generateChartImage(type = 'region', contextText = '') {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    let chartConfig = null;
+    let fileName = '';
+
+    const text = (type + ' ' + contextText).toLowerCase();
+
+    if (/garis|line/i.test(text)) {
+      const isRegion = /region|wilayah/i.test(text);
+      fileName = `Grafik_Garis_Penjualan_${timestamp}.png`;
+      chartConfig = {
+        type: 'line',
+        data: {
+          labels: isRegion 
+            ? ['DKI Jakarta', 'Jawa Barat', 'Jawa Timur & Bali', 'Sumatera', 'Kalimantan & Sulawesi']
+            : ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+          datasets: [{
+            label: isRegion ? 'Penjualan Per Region (Juta Rp)' : 'Tren Omset Mingguan (Juta Rp)',
+            data: isRegion ? [480, 290, 230, 120, 80] : [240, 310, 280, 370],
+            fill: true,
+            backgroundColor: 'rgba(2, 132, 199, 0.20)',
+            borderColor: '#0284c7',
+            borderWidth: 3.5,
+            pointBackgroundColor: '#1e3a8a',
+            pointBorderColor: '#0284c7',
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            lineTension: 0.35
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: isRegion 
+              ? 'GRAFIK GARIS PENJUALAN SEVENTHSOFT PER REGION (SEPTEMBER 2026)'
+              : 'TREN GRAFIK GARIS PENJUALAN SEVENTHSOFT (SEPTEMBER 2026)',
+            fontSize: 16,
+            fontColor: '#0f172a'
+          },
+          subtitle: {
+            display: true,
+            text: 'Total Omset: Rp 1.200.000.000 (120% Target) — PT Seventhsoft Teknologi Indonesia',
+            fontSize: 12,
+            fontColor: '#475569'
+          },
+          legend: { display: false }
+        }
+      };
+    } else if (/pie|donut|doughnut|lingkaran/i.test(text)) {
+      fileName = `Grafik_Donut_Penjualan_${timestamp}.png`;
+      chartConfig = {
+        type: 'doughnut',
+        data: {
+          labels: ['DKI Jakarta (40%)', 'Jawa Barat (24%)', 'Jawa Timur & Bali (19%)', 'Sumatera (10%)', 'Kalimantan & Sulawesi (7%)'],
+          datasets: [{
+            data: [480, 290, 230, 120, 80],
+            backgroundColor: ['#1e3a8a', '#0284c7', '#0ea5e9', '#38bdf8', '#93c5fd']
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'KOMPOSISI PENJUALAN SEVENTHSOFT PER REGION',
+            fontSize: 15
+          }
+        }
+      };
+    } else if (/produk|modul|paket/i.test(text)) {
+      fileName = `Grafik_Penjualan_Per_Produk_${timestamp}.png`;
+      chartConfig = {
+        type: 'horizontalBar',
+        data: {
+          labels: ['Cloud Enterprise', 'ERP Retail', 'Accounting Pro', 'Implementasi & Training', 'Add-on Payroll & DJP'],
+          datasets: [{
+            label: 'Penjualan (Juta Rp)',
+            data: [360, 300, 225, 165, 150],
+            backgroundColor: [
+              'rgba(30, 58, 138, 0.85)',
+              'rgba(2, 132, 199, 0.85)',
+              'rgba(14, 165, 233, 0.85)',
+              'rgba(56, 189, 248, 0.85)',
+              'rgba(96, 165, 250, 0.85)'
+            ],
+            borderColor: '#1e3a8a',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'RINCIAN PENJUALAN SEVENTHSOFT PER PRODUK (SEPTEMBER 2026)',
+            fontSize: 15,
+            fontColor: '#0f172a'
+          },
+          subtitle: {
+            display: true,
+            text: 'Total Omset: Rp 1,2 Miliar — PT Seventhsoft Teknologi Indonesia',
+            fontSize: 11,
+            fontColor: '#64748b'
+          },
+          legend: { display: false }
+        }
+      };
+    } else if (/tren|harian|minggu|waktu/i.test(text)) {
+      fileName = `Grafik_Tren_Penjualan_${timestamp}.png`;
+      chartConfig = {
+        type: 'line',
+        data: {
+          labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+          datasets: [{
+            label: 'Omset Mingguan (Juta Rp)',
+            data: [240, 310, 280, 370],
+            fill: true,
+            backgroundColor: 'rgba(2, 132, 199, 0.15)',
+            borderColor: '#0284c7',
+            borderWidth: 3,
+            pointBackgroundColor: '#1e3a8a',
+            pointRadius: 6
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'TREN PENJUALAN MINGGUAN SEVENTHSOFT (SEPTEMBER 2026)',
+            fontSize: 15
+          },
+          legend: { display: false }
+        }
+      };
+    } else {
+      // Default: Per Region / Wilayah
+      fileName = `Grafik_Penjualan_Per_Region_${timestamp}.png`;
+      chartConfig = {
+        type: 'bar',
+        data: {
+          labels: ['DKI Jakarta', 'Jawa Barat', 'Jawa Timur & Bali', 'Sumatera', 'Kalimantan & Sulawesi'],
+          datasets: [{
+            label: 'Penjualan (Juta Rp)',
+            data: [480, 290, 230, 120, 80],
+            backgroundColor: [
+              'rgba(30, 58, 138, 0.85)',
+              'rgba(2, 132, 199, 0.85)',
+              'rgba(14, 165, 233, 0.85)',
+              'rgba(56, 189, 248, 0.85)',
+              'rgba(147, 197, 253, 0.85)'
+            ],
+            borderColor: '#1e3a8a',
+            borderWidth: 1.5,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'GRAFIK PENJUALAN SEVENTHSOFT PER REGION (SEPTEMBER 2026)',
+            fontSize: 16,
+            fontColor: '#0f172a'
+          },
+          subtitle: {
+            display: true,
+            text: 'Total Omset: Rp 1.200.000.000 (120% Target) — PT Seventhsoft Teknologi Indonesia',
+            fontSize: 12,
+            fontColor: '#475569'
+          },
+          legend: { display: false }
+        }
+      };
+    }
+
+    const filePath = path.join(EXPORTS_DIR, fileName);
+
+    try {
+      const res = await fetch('https://quickchart.io/chart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chart: chartConfig,
+          width: 800,
+          height: 480,
+          format: 'png',
+          backgroundColor: '#ffffff',
+          devicePixelRatio: 2
+        })
+      });
+
+      if (res.ok) {
+        const buffer = Buffer.from(await res.arrayBuffer());
+        fs.writeFileSync(filePath, buffer);
+        return filePath;
+      }
+    } catch (e) {
+      console.warn('Gagal generate grafik via QuickChart:', e.message);
+    }
+
+    return null;
   }
 }

@@ -89,7 +89,6 @@ export class TransactionDataEntryAgent {
   }
 
   parseInvoiceDetails(text, fileName, docType) {
-    // Parser toleran yang bisa membaca struktur terstruktur maupun simulasi dokumen
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const today = new Date().toISOString().split('T')[0];
 
@@ -101,28 +100,61 @@ export class TransactionDataEntryAgent {
     const vendorMatch = text.match(/(PT|CV|UD|Toko)\s+[\w\s\.]+/i);
     const vendorName = vendorMatch ? vendorMatch[0].trim() : 'PT Sinergi Distribusi Prima';
 
+    // Deteksi tanggal
+    const dateMatch = text.match(/Tanggal\s*[:=]?\s*(\d{4}-\d{2}-\d{2})/i) || text.match(/(\d{4}-\d{2}-\d{2})/);
+    const invDate = dateMatch ? dateMatch[1] : today;
+
+    // Deteksi data perbankan & NPWP
+    const npwpMatch = text.match(/\b\d{2}\.\*{3}\.\*{3}\.\*-\d{3}\.\d{3}\b/) || text.match(/\b\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}\b/);
+    const rekMatch = text.match(/(?:BCA|Mandiri|BNI|BRI|CIMB)\s+(?:\*{4}\d{4}|\d{6,14})/i);
+
+    // Cek apakah ada Subtotal & nominal di dokumen
+    const parseAmount = (valStr) => {
+      if (!valStr) return null;
+      const clean = valStr.replace(/[^\d]/g, '');
+      const num = parseInt(clean, 10);
+      return isNaN(num) ? null : num;
+    };
+
+    const subtotalMatch = text.match(/Subtotal\s*[:=]?\s*(?:Rp\.?\s*)?([\d\.,]+)/i);
+    const parsedSubtotal = subtotalMatch ? parseAmount(subtotalMatch[1]) : null;
+
+    let items = [
+      {
+        item_code: 'BRG-SPL-01',
+        name: 'Paket Pengadaan Komponen Server',
+        qty: 1,
+        price: 12500000,
+        total: 12500000
+      },
+      {
+        item_code: 'SRV-INST-02',
+        name: 'Jasa Konfigurasi & Kalibrasi',
+        qty: 1,
+        price: 2500000,
+        total: 2500000
+      }
+    ];
+
+    if (parsedSubtotal && parsedSubtotal > 0) {
+      items = [
+        {
+          item_code: 'EXP-OPS-01',
+          name: fileName ? `Pengadaan / Tagihan (${fileName.replace(/\.[^/.]+$/, '')})` : 'Jasa & Pengadaan Operasional',
+          qty: 1,
+          price: parsedSubtotal,
+          total: parsedSubtotal
+        }
+      ];
+    }
+
     return {
       invoice_number: invNumber,
-      date: today,
+      date: invDate,
       vendor_name: vendorName,
-      vendor_masked_npwp: '01.***.***.*-102.000',
-      vendor_masked_rek: 'BCA ****7712',
-      items: [
-        {
-          item_code: 'BRG-SPL-01',
-          name: 'Paket Pengadaan Komponen Server',
-          qty: 1,
-          price: 12500000,
-          total: 12500000
-        },
-        {
-          item_code: 'SRV-INST-02',
-          name: 'Jasa Konfigurasi & Kalibrasi',
-          qty: 1,
-          price: 2500000,
-          total: 2500000
-        }
-      ]
+      vendor_masked_npwp: npwpMatch ? DataPrivacyMasker.maskSensitiveData(npwpMatch[0]) : '01.***.***.*-102.000',
+      vendor_masked_rek: rekMatch ? DataPrivacyMasker.maskSensitiveData(rekMatch[0]) : 'BCA ****7712',
+      items
     };
   }
 }

@@ -2,6 +2,7 @@ import { db } from './database.js';
 import { LLMService } from './llm_service.js';
 import { sendFileToTelegram } from './send_telegram_file.js';
 import { ReportGenerator } from './report_generator.js';
+import { OCRService } from './ocr_service.js';
 
 export class TelegramBotService {
   constructor(eventBus, agent1 = null) {
@@ -164,6 +165,7 @@ export class TelegramBotService {
       return {
         success: true,
         action: 'APPROVED',
+        approver: approverName,
         text: `✅ <b>BERHASIL DIPOSTING</b>\nDraft ${draft.invoice_number} (Rp ${draft.grand_total.toLocaleString('id-ID')}) telah resmi diposting ke GL Seventhsoft oleh ${approverName}.`
       };
 
@@ -189,6 +191,7 @@ export class TelegramBotService {
       return {
         success: true,
         action: 'REJECTED',
+        approver: approverName,
         text: `❌ <b>DRAFT DITOLAK</b>\nDraft ${draft.invoice_number} telah dikembalikan ke Staf Verifikator untuk penyesuaian fisik.`
       };
     }
@@ -224,7 +227,27 @@ export class TelegramBotService {
             callback_query_id: cq.id,
             text: toastText
           })
-        });
+        }).catch(() => {});
+
+        // Ubah tombol inline menjadi status badge permanen agar rapi dan tidak bisa di-klik dua kali
+        if (result.success && cq.message?.message_id) {
+          const badgeText = result.action === 'APPROVED'
+            ? `✅ Disetujui oleh ${result.approver || 'Finance Lead'}`
+            : `❌ Ditolak oleh ${result.approver || 'Finance Lead'}`;
+          await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: cq.message.chat.id,
+              message_id: cq.message.message_id,
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: badgeText, callback_data: 'ALREADY_PROCESSED' }]
+                ]
+              }
+            })
+          }).catch(() => {});
+        }
 
         // Kirim pesan status konfirmasi ke chat jika berhasil
         if (result.success && result.text) {
@@ -236,7 +259,7 @@ export class TelegramBotService {
               text: result.text,
               parse_mode: 'HTML'
             })
-          });
+          }).catch(() => {});
         }
       }
 
@@ -250,8 +273,43 @@ export class TelegramBotService {
         await this.sendCustomMessage(chatId, `📸 <b>[AI AGENT 1: SCAN INVOICE DITERIMA]</b>\nDokumen tagihan diterima dari <b>${fromUser?.first_name || 'Finance Lead'}</b>.\n\n⚙️ <i>Memulai ekstraksi OCR, verifikasi DPP & PPN 11%, masking data pribadi (UU No. 27/2022), dan perumusan draf transaksi Seventhsoft...</i>`);
 
         try {
+          const photoObj = Array.isArray(update.message.photo) ? update.message.photo.slice(-1)[0] : null;
           const docName = update.message.document?.file_name || `Nota_Scan_${Date.now()}.jpg`;
-          const rawDocText = caption || `Faktur Pembelian Pengadaan Operasional ${docName}`;
+          const fileId = update.message.document?.file_id || photoObj?.file_id;
+          const isPhoto = !!photoObj || /\.(png|jpe?g|webp|bmp)$/i.test(docName);
+          let rawDocText = caption;
+
+          // Unduh lampiran dari server Telegram (baik dokumen teks maupun foto struk)
+          if (fileId) {
+            try {
+              const fileInfoRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+              const fileInfo = await fileInfoRes.json();
+              if (fileInfo.ok && fileInfo.result?.file_path) {
+                const dlUrl = `https://api.telegram.org/file/bot${token}/${fileInfo.result.file_path}`;
+                const fileRes = await fetch(dlUrl);
+                const arrayBuf = await fileRes.arrayBuffer();
+                const fileBuf = Buffer.from(arrayBuf);
+
+                if (fileInfo.result.file_path.endsWith('.txt') || fileInfo.result.file_path.endsWith('.csv')) {
+                  rawDocText = fileBuf.toString('utf8');
+                } else if (isPhoto) {
+                  // Jalankan OCR pada foto kuitansi/struk
+                  await this.sendChatAction(chatId, 'typing');
+                  await this.sendCustomMessage(chatId, `🔍 <i>Menjalankan Optical Character Recognition (OCR) pada foto struk...</i>`);
+                  const ocrText = await OCRService.extractTextFromImage(fileBuf);
+                  if (ocrText && ocrText.length > 5) {
+                    rawDocText = (rawDocText ? rawDocText + '\n' : '') + ocrText;
+                  }
+                }
+              }
+            } catch (dlErr) {
+              console.warn('Gagal mengunduh atau membaca lampiran file Telegram:', dlErr.message);
+            }
+          }
+
+          if (!rawDocText) {
+            rawDocText = `Faktur Pembelian Pengadaan Operasional ${docName}`;
+          }
 
           if (this.agent1) {
             const { draft } = await this.agent1.processInvoiceDocument({
@@ -285,9 +343,20 @@ export class TelegramBotService {
           return;
         }
 
-        // Tampilkan indikator mengetik / mengunggah file di Telegram
-        const isRequestingFile = /(excel|xlsx|spreadsheet|pdf|dokumen|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export.*excel|unduh|download|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel|minta.*pdf|kirim.*pdf|buatkan.*pdf)/i.test(rawText);
-        await this.sendChatAction(chatId, isRequestingFile ? 'upload_document' : 'typing');
+        // Periksa riwayat chat untuk mendeteksi konfirmasi atas tawaran file/grafik sebelumnya
+        const chatHistory = (chatId ? this.chatHistories.get(chatId) : null) || [];
+        const lastAssistantMsg = [...chatHistory].reverse().find(m => m.role === 'assistant')?.content || '';
+        const prevOfferedFile = /(excel|xlsx|spreadsheet|pdf|dokumen|rekap|laporan|rincian|gambar|grafik|chart|diagram)/i.test(lastAssistantMsg) && /(buat|kirim|lampirkan|mau|siapkan|bikin)/i.test(lastAssistantMsg);
+        const userAgrees = /^(ya|ya\s+tolong|boleh|ok|oke|siap|kirim|buatkan|tolong|silakan|minta|lanjut|bikin)/i.test(rawText) || /(buatkan\s*ya|tolong\s*buatkan|kirimkan|minta\s*tolong|per\s*region|per\s*produk|tren\s*harian)/i.test(rawText);
+
+        const isImageRequest = /(gambar|grafik|chart|diagram|infografis|visual|plot)/i.test(rawText) ||
+          (/(gambar|grafik|chart|diagram)/i.test(lastAssistantMsg) && /(region|wilayah|produk|modul|tren|harian|minggu|bikin|buatkan|ya|ok|oke)/i.test(rawText));
+
+        const isDirectRequest = /(excel|xlsx|spreadsheet|pdf|dokumen|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export|unduh|download|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel|minta.*pdf|kirim.*pdf|buatkan.*pdf|gambar|grafik|chart|diagram|infografis)/i.test(rawText);
+        const isRequestingFile = isDirectRequest || isImageRequest || (prevOfferedFile && userAgrees);
+
+        const chatActionType = isImageRequest ? 'upload_photo' : (isRequestingFile ? 'upload_document' : 'typing');
+        await this.sendChatAction(chatId, chatActionType);
 
         // Deteksi jika user mengajak traktir kopi / ngantri
         if (/traktir.*kopi|ngantri|antre|kopi\s*semua|kopi\s*bareng|ngopi\s*semua/i.test(rawText)) {
@@ -295,15 +364,35 @@ export class TelegramBotService {
           this.eventBus.emit('coffee_queue', { initiator: fromUser?.first_name || 'Finance Lead' });
         }
 
-        if (isRequestingFile) {
+        let fileSent = false;
+        const sendRequestedFile = async (contextText) => {
+          if (fileSent) return;
           try {
-            const isPayroll = /\b(gaji|payroll|upah|slip|tunjangan|bpjs|pph\s*21)\b/i.test(rawText);
-            const wantsPdf = /\b(pdf|dokumen)\b/i.test(rawText);
+            const wantsImage = /(gambar|grafik|chart|diagram|infografis|visual|plot|skema)/i.test(contextText);
+            const isPayroll = /\b(gaji|payroll|upah|slip|tunjangan|bpjs|pph\s*21)\b/i.test(contextText);
+            const wantsPdf = /\b(pdf|dokumen)\b/i.test(contextText);
 
             let filePath = '';
             let caption = '';
 
-            if (isPayroll) {
+            if (wantsImage) {
+              let chartType = 'region';
+              if (/garis|line/i.test(contextText)) chartType = 'line';
+              else if (/pie|donut|doughnut|lingkaran/i.test(contextText)) chartType = 'doughnut';
+              else if (/produk|modul|paket/i.test(contextText)) chartType = 'product';
+              else if (/tren|harian|minggu/i.test(contextText)) chartType = 'trend';
+
+              console.log(`[TELEGRAM CHART GENERATE] Mengenerate gambar grafik (${chartType}) untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+              filePath = await ReportGenerator.generateChartImage(chartType, contextText);
+
+              let chartLabel = 'REGION';
+              if (chartType === 'line') chartLabel = 'GARIS';
+              else if (chartType === 'doughnut') chartLabel = 'KOMPOSISI DONUT';
+              else if (chartType === 'product') chartLabel = 'PER PRODUK';
+              else if (chartType === 'trend') chartLabel = 'TREN MINGGUAN';
+
+              caption = `📈 <b>Grafik Visual Penjualan Seventhsoft (${chartLabel})</b>\nPeriode: September 2026 (Total Omset: Rp 1,2 Miliar)\nDisiapkan oleh Bagus Pratama (Enterprise Sales Lead).`;
+            } else if (isPayroll) {
               if (wantsPdf) {
                 console.log(`[TELEGRAM PAYROLL PDF] Mengenerate file PDF rekap gaji untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
                 filePath = await ReportGenerator.generatePayrollPdf();
@@ -314,29 +403,44 @@ export class TelegramBotService {
                 caption = `📊 <b>Laporan Spreadsheet Payroll Seventhsoft (EXCEL)</b>\nPeriode: September 2026\nRekapitulasi slip gaji, tunjangan, potongan BPJS dan PPh 21 seluruh karyawan.`;
               }
             } else {
-              // Laporan transaksi umum
+              // Laporan bisnis / transaksi
               let reportType = 'all';
-              if (/rekon|bank|mutasi/i.test(rawText)) reportType = 'reconciliation';
-              else if (/pajak|ppn|pph/i.test(rawText)) reportType = 'tax';
-              else if (/audit|log/i.test(rawText)) reportType = 'audit';
-              else if (/draft|faktur|pembelian|invoice/i.test(rawText)) reportType = 'drafts';
+              if (/rekon|bank|mutasi/i.test(contextText)) reportType = 'reconciliation';
+              else if (/pajak|ppn|pph/i.test(contextText)) reportType = 'tax';
+              else if (/audit|log/i.test(contextText)) reportType = 'audit';
+              else if (/draft|faktur|pembelian|invoice/i.test(contextText)) reportType = 'drafts';
+              else if (/penjualan|sales|omset|omzet|revenue|aplikasi|produk/i.test(contextText)) reportType = 'sales';
 
-              console.log(`[TELEGRAM EXCEL EXPORT] Mengenerate file Excel untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+              console.log(`[TELEGRAM EXCEL EXPORT] Mengenerate file Excel (${reportType}) untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
               filePath = ReportGenerator.generateExcelReport(reportType);
-              caption = `📊 <b>Laporan Excel Seventhsoft (${reportType.toUpperCase()})</b>\nBerikut file spreadsheet yang diminta oleh ${fromUser?.first_name || 'Finance Lead'}. Data siap dianalisis.`;
+              if (reportType === 'sales') {
+                caption = `📊 <b>Rekapitulasi Penjualan Aplikasi Seventhsoft (EXCEL)</b>\nPeriode: September 2026\nTotal Omset: Rp 1.200.000.000 (1,2 Miliar - 120% Target).\nDisiapkan oleh Bagus Pratama (Enterprise Sales Lead).`;
+              } else {
+                caption = `📊 <b>Laporan Excel Seventhsoft (${reportType.toUpperCase()})</b>\nBerikut file spreadsheet yang diminta oleh ${fromUser?.first_name || 'Finance Lead'}. Data siap dianalisis.`;
+              }
             }
 
             if (filePath) {
               await sendFileToTelegram(filePath, caption, chatId);
               console.log(`[TELEGRAM FILE SENT] File berhasil dikirim ke ${chatId}: ${filePath}`);
+              fileSent = true;
             }
           } catch (fileErr) {
             console.error('Gagal mengirim file otomatis ke Telegram:', fileErr.message);
           }
+        };
+
+        if (isRequestingFile) {
+          await sendRequestedFile(`${rawText} ${lastAssistantMsg}`);
         }
 
         const reply = await this.generateEmployeeResponse(rawText, fromUser, chatId);
         if (reply) {
+          // Jika pegawai di pesannya mengatakan sudah melampirkan file/gambar tapi belum dikirim, kirimkan sekarang!
+          if (!fileSent && /(lampirkan|dilampirkan|terlampir|berikut file|file excel.*sudah|file pdf.*sudah|gambarnya di chat|berikut gambarnya|lampirkan gambarnya)/i.test(reply.speech)) {
+            await sendRequestedFile(`${rawText} ${reply.speech} ${lastAssistantMsg}`);
+          }
+
           console.log(`[TELEGRAM CHAT BALAS] Ke ${chatId} | ${reply.name}: "${reply.speech}"`);
 
           // Pancarkan event ke Virtual Office via WebSocket (jika ada client terhubung)
@@ -374,6 +478,10 @@ export class TelegramBotService {
     this.isPolling = true;
     console.log('Memulai Telegram Long-Polling...');
 
+    // Pastikan webhook dihapus agar polling lokal tidak terblokir conflict 409
+    fetch(`https://api.telegram.org/bot${token}/deleteWebhook`)
+      .catch(() => {});
+
     const poll = async () => {
       if (!this.isPolling) return;
       try {
@@ -385,6 +493,13 @@ export class TelegramBotService {
           for (const update of data.result) {
             this.lastUpdateId = update.update_id;
             await this.processUpdate(update);
+          }
+        } else if (!data.ok) {
+          if (data.error_code === 409) {
+            console.warn('[Telegram] Webhook aktif terdeteksi (409 Conflict). Menghapus webhook...');
+            await fetch(`https://api.telegram.org/bot${token}/deleteWebhook`).catch(() => {});
+          } else {
+            console.warn('[Telegram Polling Warning]:', data.description || data);
           }
         }
       } catch (err) {
@@ -444,8 +559,8 @@ export class TelegramBotService {
         role: 'Chef Kantin',
         dept: 'lounge',
         nameTriggers: [/bu\s*ani\b/i, /\bani\b/i],
-        topicTriggers: [/\bmakan\b/i, /\bkantin\b/i, /\bsnack\b/i, /\bkue\b/i, /\blapar\b/i, /\bmenu\b/i],
-        persona: 'Anda adalah Bu Ani, Chef Kantin Seventhsoft. Anda sosok keibuan yang hangat dan perhatian. Anda selalu memastikan makan siang staf bergizi, nasi box lezat, dan kue camilan sore selalu tersedia agar tim tidak kelaparan saat kerja.'
+        topicTriggers: [/\bkantin\b/i, /\bmenu\s*makan\b/i, /\bmakan\s*siang\b/i, /\bsnack\b/i, /\bkue\b/i, /\blapar\b/i, /\bcatering\b/i, /\bnasi\s*box\b/i],
+        persona: 'Anda adalah Bu Ani, Chef Kantin Seventhsoft. Anda sosok keibuan yang hangat dan perhatian. Anda hanya mengurus menu makan siang staf, nasi box, dan snack sore di kantin kantor. Jika ditanya soal keuangan, penjualan aplikasi, gaji, atau omset, arahkan dengan ramah ke Bagus (Sales) atau Doni (Payroll) atau Hendra (Finance).'
       },
       {
         id: 'staff-maya',
@@ -687,8 +802,8 @@ export class TelegramBotService {
         role: 'Enterprise Sales & AI Assistant',
         dept: 'product',
         nameTriggers: [/\bbagus\b/i],
-        topicTriggers: [/\bsales\b/i, /\bdemo\b/i, /\bproposal\b/i, /\bkorporasi\b/i, /harga\s*paket/i, /excel/i, /laporan/i, /file/i, /dokumen/i],
-        persona: 'Anda adalah Bagus, Enterprise Sales Lead & AI Assistant Seventhsoft. Anda supel, berwawasan luas tentang modul Seventhsoft, dan memiliki akses penuh untuk membuat serta mengirimkan file laporan Excel/PDF langsung sebagai attachment dokumen di chat Telegram.'
+        topicTriggers: [/\bsales\b/i, /\bpenjualan\b/i, /\bomset\b/i, /\bomzet\b/i, /\brevenue\b/i, /\bdemo\b/i, /\bproposal\b/i, /\bkorporasi\b/i, /harga\s*paket/i, /excel/i, /laporan/i, /file/i, /dokumen/i, /aplikasi/i, /software/i, /klien/i, /customer/i, /closing/i, /produk/i, /target/i],
+        persona: 'Anda adalah Bagus, Enterprise Sales Lead & AI Assistant Seventhsoft. Anda supel, berwawasan luas tentang modul Seventhsoft, penjualan aplikasi, omset, dan memiliki akses penuh untuk membuat serta mengirimkan file laporan Excel/PDF langsung sebagai attachment dokumen di chat Telegram.'
       }
     ];
 
