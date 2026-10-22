@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { db } from './database.js';
 
 /**
  * Layanan Multi-LLM Terpadu untuk Seventhsoft AI Agent
@@ -12,9 +13,10 @@ export class LLMService {
    * @returns {Promise<{provider: string, model: string, text: string} | null>}
    */
   static async askAI(userPrompt, options = {}) {
-    const geminiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
-    const deepseekKey = (process.env.DEEPSEEK_API_KEY || '').trim().replace(/^["']|["']$/g, '');
-    const preferred = (process.env.LLM_PROVIDER || 'deepseek').trim().toLowerCase().replace(/^["']|["']$/g, '');
+    const settings = db?.getSettings ? db.getSettings() : {};
+    const geminiKey = (process.env.GEMINI_API_KEY || settings.gemini_api_key || '').trim().replace(/^["']|["']$/g, '');
+    const deepseekKey = (process.env.DEEPSEEK_API_KEY || settings.deepseek_api_key || '').trim().replace(/^["']|["']$/g, '');
+    const preferred = (process.env.LLM_PROVIDER || settings.llm_provider || 'deepseek').trim().toLowerCase().replace(/^["']|["']$/g, '');
 
     const characterName = options.characterName || 'Bagus';
     const characterRole = options.characterRole || 'Enterprise Sales Lead & Asisten AI Seventhsoft';

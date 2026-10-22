@@ -325,9 +325,10 @@ app.post('/api/test-telegram', async (req, res) => {
 
 // 10.1 Diagnostic / Debug Endpoint for LLM in Vercel
 app.get('/api/debug-llm', async (req, res) => {
-  const deepseekKey = (process.env.DEEPSEEK_API_KEY || '').trim().replace(/^["']|["']$/g, '');
-  const geminiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
-  const provider = (process.env.LLM_PROVIDER || '').trim();
+  const settings = db.getSettings();
+  const deepseekKey = (process.env.DEEPSEEK_API_KEY || settings.deepseek_api_key || '').trim().replace(/^["']|["']$/g, '');
+  const geminiKey = (process.env.GEMINI_API_KEY || settings.gemini_api_key || '').trim().replace(/^["']|["']$/g, '');
+  const provider = (process.env.LLM_PROVIDER || settings.llm_provider || 'deepseek').trim();
 
   let askResult = null;
   let askError = null;
@@ -343,7 +344,8 @@ app.get('/api/debug-llm', async (req, res) => {
   }
 
   res.json({
-    env: {
+    env_keys: Object.keys(process.env).filter(k => !k.startsWith('npm_') && !k.startsWith('_')),
+    active_keys: {
       has_deepseek: !!deepseekKey,
       deepseek_len: deepseekKey.length,
       deepseek_preview: deepseekKey ? deepseekKey.slice(0, 7) + '...' : null,
