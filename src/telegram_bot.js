@@ -21,8 +21,8 @@ export class TelegramBotService {
 
   getCredentials() {
     const settings = db.getSettings();
-    const token = process.env.TELEGRAM_BOT_TOKEN || settings.telegram_bot_token || '';
-    const chatId = process.env.TELEGRAM_CHAT_ID || settings.telegram_chat_id || '';
+    const token = (process.env.TELEGRAM_BOT_TOKEN || settings.telegram_bot_token || '').trim().replace(/^["']|["']$/g, '');
+    const chatId = (process.env.TELEGRAM_CHAT_ID || settings.telegram_chat_id || '').trim().replace(/^["']|["']$/g, '');
     return { token, chatId };
   }
 

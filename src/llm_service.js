@@ -12,9 +12,9 @@ export class LLMService {
    * @returns {Promise<{provider: string, model: string, text: string} | null>}
    */
   static async askAI(userPrompt, options = {}) {
-    const geminiKey = process.env.GEMINI_API_KEY;
-    const deepseekKey = process.env.DEEPSEEK_API_KEY;
-    const preferred = (process.env.LLM_PROVIDER || 'deepseek').toLowerCase();
+    const geminiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+    const deepseekKey = (process.env.DEEPSEEK_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+    const preferred = (process.env.LLM_PROVIDER || 'deepseek').trim().toLowerCase().replace(/^["']|["']$/g, '');
 
     const characterName = options.characterName || 'Bagus';
     const characterRole = options.characterRole || 'Enterprise Sales Lead & Asisten AI Seventhsoft';
