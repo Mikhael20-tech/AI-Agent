@@ -323,6 +323,40 @@ app.post('/api/test-telegram', async (req, res) => {
   }
 });
 
+// 10.1 Diagnostic / Debug Endpoint for LLM in Vercel
+app.get('/api/debug-llm', async (req, res) => {
+  const deepseekKey = (process.env.DEEPSEEK_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+  const geminiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+  const provider = (process.env.LLM_PROVIDER || '').trim();
+
+  let askResult = null;
+  let askError = null;
+
+  try {
+    const { LLMService } = await import('./llm_service.js');
+    askResult = await LLMService.askAI('Halo Bagus, gimana kabarmu?');
+  } catch (err) {
+    askError = {
+      message: err.message,
+      stack: err.stack
+    };
+  }
+
+  res.json({
+    env: {
+      has_deepseek: !!deepseekKey,
+      deepseek_len: deepseekKey.length,
+      deepseek_preview: deepseekKey ? deepseekKey.slice(0, 7) + '...' : null,
+      has_gemini: !!geminiKey,
+      gemini_len: geminiKey.length,
+      gemini_preview: geminiKey ? geminiKey.slice(0, 7) + '...' : null,
+      llm_provider: provider
+    },
+    askResult,
+    askError
+  });
+});
+
 // 11. Telegram Webhook Endpoint (Untuk Vercel / Cloud Serverless)
 app.post('/api/telegram-webhook', async (req, res) => {
   try {
