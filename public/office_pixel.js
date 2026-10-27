@@ -14,7 +14,7 @@
  */
 
 const TILE_SIZE = 16;
-const COLS = 44;
+const COLS = 76; // Kantor (Cols 0-43) + Taman Penghubung (Cols 44-47) + Asrama Putri & Putra (Cols 48-75)
 const ROWS = 28;
 
 export class VirtualOfficePixel {
@@ -34,14 +34,14 @@ export class VirtualOfficePixel {
     this.container.appendChild(this.canvas);
 
     // Camera & View Transform
-    this.scale = 2.0;
-    this.minScale = 0.8;
+    this.scale = 1.35;
+    this.minScale = 0.65;
     this.maxScale = 3.5;
     this.panX = 0;
     this.panY = 0;
     this.targetPanX = 0;
     this.targetPanY = 0;
-    this.targetScale = 2.0;
+    this.targetScale = 1.35;
     this.isDragging = false;
     this.dragStartX = 0;
     this.dragStartY = 0;
@@ -163,60 +163,259 @@ export class VirtualOfficePixel {
   initEmployeeData() {
     this.employeeData = [
       // --- ZONA 1: FINANCE & APPROVER GL (Kiri Atas) ---
-      // Mikhael duduk di Row 3 menghadap ke BAWAH melihat meja eksekutifnya di Row 4!
-      { id: 'lead-finance', name: 'Mikhael', role: 'Finance Lead (Approver GL)', dept: 'finance', col: 5, row: 3, charIdx: 0, dir: 'down', state: 'sitting', status: 'approved', isLead: true, task: '🛡️ Otorisasi final posting GL Seventhsoft via Telegram', energy: 95, mood: 'semangat', thought: 'Semua posting jurnal ke Seventhsoft harus lolos Four-Eyes Principle!' },
-      { id: 'agent-entry', name: 'agen-entry', role: 'AI Data Entry & OCR', dept: 'finance', col: 2, row: 3, charIdx: 1, dir: 'down', state: 'sitting', status: 'active', isAI: true, task: '📄 Ekstraksi faktur & Masking PDP (Modul Beli)', energy: 90, mood: 'semangat', thought: 'Membaca barcode dan teks invoice vendor dengan OCR kecepatan tinggi...' },
-      { id: 'agent-rekon', name: 'agen-rekon', role: 'AI Rekonsiliasi Bank', dept: 'finance', col: 8, row: 3, charIdx: 2, dir: 'down', state: 'sitting', status: 'active', isAI: true, task: '🏦 Pencocokan e-statement BCA vs Kas Seventhsoft', energy: 88, mood: 'semangat', thought: 'Mencocokkan mutasi kas bank vs General Ledger Seventhsoft...' },
-      // agen-pajak duduk di Row 8 menghadap ke ATAS mengetik di PC Row 7!
-      { id: 'agent-pajak', name: 'agen-pajak', role: 'AI Pajak & Margin', dept: 'finance', col: 5, row: 8, charIdx: 3, dir: 'up', state: 'sitting', status: 'idle', isAI: true, task: '📊 Proyeksi PPN 11% & Deteksi anomali HPP', energy: 85, mood: 'normal', thought: 'Menghitung rekapitulasi faktur pajak keluaran dan masukan.' },
-      { id: 'staff-budi-kurir', name: 'Budi', role: 'Kurir Berkas Akuntansi', dept: 'finance', col: 2, row: 7, charIdx: 4, dir: 'right', state: 'walking', isWalker: true, routeType: 'courier', task: '🚶 Antar map invoice dari meja Entry ke meja Lead', energy: 82, mood: 'semangat', thought: 'Mengantarkan map berkas fisik dari meja Entry ke meja Pak Mikhael.' },
+      {
+        id: 'lead-finance', name: 'Mikhael', role: 'Finance Lead (Approver GL)', dept: 'finance',
+        col: 5, row: 3, charIdx: 0, dir: 'down', state: 'sitting', status: 'approved', isLead: true,
+        gender: 'male', dormRoom: 'Kamar Garuda 1 (Asrama Putra)', dormSpot: { col: 51, row: 16, dir: 'down', dormType: 'male' },
+        lemburReason: 'Otorisasi closing transaksi pembukuan akhir bulan & review Four-Eyes Principle',
+        task: '🛡️ Otorisasi final posting GL Seventhsoft via Telegram', energy: 95, mood: 'semangat',
+        thought: 'Semua posting jurnal ke Seventhsoft harus lolos Four-Eyes Principle!'
+      },
+      {
+        id: 'agent-entry', name: 'agen-entry', role: 'AI Data Entry & OCR', dept: 'finance',
+        col: 2, row: 3, charIdx: 1, dir: 'down', state: 'sitting', status: 'active', isAI: true,
+        gender: 'ai', dormRoom: 'Server Rack 01 (Kantor AI)', dormSpot: { col: 2, row: 3, dir: 'down', dormType: 'server' },
+        lemburReason: 'Batch OCR ekstraksi tumpukan faktur pembelian vendor logistik',
+        task: '📄 Ekstraksi faktur & Masking PDP (Modul Beli)', energy: 90, mood: 'semangat',
+        thought: 'Membaca barcode dan teks invoice vendor dengan OCR kecepatan tinggi...'
+      },
+      {
+        id: 'agent-rekon', name: 'agen-rekon', role: 'AI Rekonsiliasi Bank', dept: 'finance',
+        col: 8, row: 3, charIdx: 2, dir: 'down', state: 'sitting', status: 'active', isAI: true,
+        gender: 'ai', dormRoom: 'Server Rack 02 (Kantor AI)', dormSpot: { col: 8, row: 3, dir: 'down', dormType: 'server' },
+        lemburReason: 'Pencocokan e-statement mutasi kas BCA vs General Ledger Seventhsoft',
+        task: '🏦 Pencocokan e-statement BCA vs Kas Seventhsoft', energy: 88, mood: 'semangat',
+        thought: 'Mencocokkan mutasi kas bank vs General Ledger Seventhsoft...'
+      },
+      {
+        id: 'agent-pajak', name: 'agen-pajak', role: 'AI Pajak & Margin', dept: 'finance',
+        col: 5, row: 8, charIdx: 3, dir: 'up', state: 'sitting', status: 'idle', isAI: true,
+        gender: 'ai', dormRoom: 'Server Rack 03 (Kantor AI)', dormSpot: { col: 5, row: 8, dir: 'up', dormType: 'server' },
+        lemburReason: 'Rekapitulasi SPT Masa & proyeksi faktur pajak PPN 11%',
+        task: '📊 Proyeksi PPN 11% & Deteksi anomali HPP', energy: 85, mood: 'normal',
+        thought: 'Menghitung rekapitulasi faktur pajak keluaran dan masukan.'
+      },
+      {
+        id: 'staff-budi-kurir', name: 'Budi', role: 'Kurir Berkas Akuntansi', dept: 'finance',
+        col: 2, row: 7, charIdx: 4, dir: 'right', state: 'walking', isWalker: true, routeType: 'courier',
+        gender: 'male', dormRoom: 'Kamar Elang 5 (Asrama Putra)', dormSpot: { col: 67, row: 24, dir: 'down', dormType: 'male' },
+        lemburReason: 'Pengiriman map berkas fisik invoice mendesak ke kantor cabang',
+        task: '🚶 Antar map invoice dari meja Entry ke meja Lead', energy: 82, mood: 'semangat',
+        thought: 'Mengantarkan map berkas fisik dari meja Entry ke meja Pak Mikhael.'
+      },
 
       // --- ZONA 2: CODING & TECH LAB (Tengah Atas) ---
-      // Pod 1: Desks di Row 5, kursi di Row 6. Kevin, Sarah, Reza duduk di Row 6 menghadap ke ATAS ke monitor!
-      { id: 'dev-kevin', name: 'Kevin', role: 'Lead Backend Engineer', dept: 'tech', col: 14, row: 6, charIdx: 0, dir: 'up', state: 'sitting', status: 'active', task: '💻 Maintain REST API Seventhsoft & Webhook n8n', energy: 92, mood: 'semangat', thought: 'Optimasi endpoint webhook transaksi agar respon di bawah 40ms!' },
-      { id: 'dev-sarah', name: 'Sarah', role: 'Frontend React Engineer', dept: 'tech', col: 17, row: 6, charIdx: 1, dir: 'up', state: 'sitting', status: 'active', task: '⚛️ Build UI Virtual Office & Live Dashboard', energy: 86, mood: 'semangat', thought: 'Rendering pixel canvas 60fps dengan dynamic lighting!' },
-      { id: 'dev-reza', name: 'Reza', role: 'System Architect', dept: 'tech', col: 20, row: 6, charIdx: 2, dir: 'up', state: 'sitting', status: 'active', task: '🏗️ Arsitektur High-Availability Microservices', energy: 80, mood: 'normal', thought: 'Mengevaluasi load balancer dan failover cluster database Seventhsoft.' },
+      {
+        id: 'dev-kevin', name: 'Kevin', role: 'Lead Backend Engineer', dept: 'tech',
+        col: 14, row: 6, charIdx: 0, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'male', dormRoom: 'Kamar Garuda 2 (Asrama Putra)', dormSpot: { col: 55, row: 16, dir: 'down', dormType: 'male' },
+        lemburReason: 'Deploy hotfix high-traffic REST API Seventhsoft & webhook n8n',
+        task: '💻 Maintain REST API Seventhsoft & Webhook n8n', energy: 92, mood: 'semangat',
+        thought: 'Optimasi endpoint webhook transaksi agar respon di bawah 40ms!'
+      },
+      {
+        id: 'dev-sarah', name: 'Sarah', role: 'Frontend React Engineer', dept: 'tech',
+        col: 17, row: 6, charIdx: 1, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'female', dormRoom: 'Kamar Melati 1 (Asrama Putri)', dormSpot: { col: 51, row: 3, dir: 'down', dormType: 'female' },
+        lemburReason: 'Penyempurnaan visual rendering canvas virtual office & modul asrama',
+        task: '⚛️ Build UI Virtual Office & Live Dashboard', energy: 86, mood: 'semangat',
+        thought: 'Rendering pixel canvas 60fps dengan dynamic lighting & asrama!'
+      },
+      {
+        id: 'dev-reza', name: 'Reza', role: 'System Architect', dept: 'tech',
+        col: 20, row: 6, charIdx: 2, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'male', dormRoom: 'Kamar Garuda 3 (Asrama Putra)', dormSpot: { col: 59, row: 16, dir: 'down', dormType: 'male' },
+        lemburReason: 'Evaluasi load balancer failover cluster database Seventhsoft',
+        task: '🏗️ Arsitektur High-Availability Microservices', energy: 80, mood: 'normal',
+        thought: 'Mengevaluasi load balancer dan failover cluster database Seventhsoft.'
+      },
 
-      // Pod 2: Desks di Row 8, kursi di Row 9. Aris, Bambang, Fikri duduk di Row 9 menghadap ke ATAS!
-      { id: 'dev-aris', name: 'Aris', role: 'AI & LLM Engineer', dept: 'tech', col: 14, row: 9, charIdx: 3, dir: 'up', state: 'sitting', status: 'active', task: '🧠 Fine-tuning Model OCR & Sanitasi Data PDP', energy: 84, mood: 'semangat', thought: 'Prompt engineering & regex masking untuk perlindungan data pribadi UU PDP.' },
-      { id: 'dev-bambang', name: 'Bambang', role: 'Database Administrator', dept: 'tech', col: 17, row: 9, charIdx: 4, dir: 'up', state: 'sitting', status: 'active', task: '🗄️ Optimasi query General Ledger & Indexing DB', energy: 78, mood: 'normal', thought: 'Tuning query SQL transaksi jurnal besar akhir bulan.' },
-      { id: 'dev-fikri', name: 'Fikri', role: 'Mobile App Developer', dept: 'tech', col: 20, row: 9, charIdx: 5, dir: 'up', state: 'sitting', status: 'active', task: '📱 Sinkronisasi Mobile App Seventhsoft', energy: 85, mood: 'semangat', thought: 'Push notifikasi approval invoice langsung ke gadget approver.' },
+      {
+        id: 'dev-aris', name: 'Aris', role: 'AI & LLM Engineer', dept: 'tech',
+        col: 14, row: 9, charIdx: 3, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'male', dormRoom: 'Kamar Garuda 4 (Asrama Putra)', dormSpot: { col: 63, row: 16, dir: 'down', dormType: 'male' },
+        lemburReason: 'Fine-tuning dataset OCR faktur pajak & perlindungan data PDP',
+        task: '🧠 Fine-tuning Model OCR & Sanitasi Data PDP', energy: 84, mood: 'semangat',
+        thought: 'Prompt engineering & regex masking untuk perlindungan data pribadi UU PDP.'
+      },
+      {
+        id: 'dev-bambang', name: 'Bambang', role: 'Database Administrator', dept: 'tech',
+        col: 17, row: 9, charIdx: 4, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'male', dormRoom: 'Kamar Garuda 5 (Asrama Putra)', dormSpot: { col: 67, row: 16, dir: 'down', dormType: 'male' },
+        lemburReason: 'Maintenance query database General Ledger & re-indexing tengah malam',
+        task: '🗄️ Optimasi query General Ledger & Indexing DB', energy: 78, mood: 'normal',
+        thought: 'Tuning query SQL transaksi jurnal besar akhir bulan.'
+      },
+      {
+        id: 'dev-fikri', name: 'Fikri', role: 'Mobile App Developer', dept: 'tech',
+        col: 20, row: 9, charIdx: 5, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'male', dormRoom: 'Kamar Garuda 6 (Asrama Putra)', dormSpot: { col: 71, row: 16, dir: 'down', dormType: 'male' },
+        lemburReason: 'Testing modul sinkronisasi notifikasi approval invoice di Android/iOS',
+        task: '📱 Sinkronisasi Mobile App Seventhsoft', energy: 85, mood: 'semangat',
+        thought: 'Push notifikasi approval invoice langsung ke gadget approver.'
+      },
 
       // --- ZONA 3: DEVOPS & INFRA POD (Kanan Atas) ---
-      { id: 'dev-deni', name: 'Deni', role: 'DevOps & Cloud Engineer', dept: 'tech', col: 26, row: 6, charIdx: 2, dir: 'up', state: 'sitting', status: 'active', task: '🐳 Monitoring Docker, Caddy HTTPS, & VPS', energy: 88, mood: 'semangat', thought: 'Cek container Docker & sertifikat SSL Caddy HTTPS tetap aman.' },
-      { id: 'dev-clara', name: 'Clara', role: 'QA & Test Automation', dept: 'tech', col: 29, row: 6, charIdx: 1, dir: 'up', state: 'sitting', status: 'active', task: '🧪 Automasi testing siklus posting transaksi', energy: 82, mood: 'normal', thought: 'Menjalankan e2e regression testing siklus approval jurnal.' },
-      { id: 'dev-adit', name: 'Adit', role: 'Cybersecurity Engineer', dept: 'tech', col: 27, row: 9, charIdx: 0, dir: 'up', state: 'sitting', status: 'active', task: '🔒 Penetrasi testing & Verifikasi hash SHA-256', energy: 85, mood: 'semangat', thought: 'Audit checksum SHA-256 pada ledger anti-manipulasi.' },
-      { id: 'dev-yoga', name: 'Yoga', role: 'IT Support & Infra', dept: 'tech', col: 26, row: 9, charIdx: 4, dir: 'right', state: 'walking', isWalker: true, routeType: 'devops', task: '🚶 Cek kabel LAN switch & temperatur server', energy: 80, mood: 'normal', thought: 'Suhu rak server utama stabil di 20 derajat Celsius.' },
+      {
+        id: 'dev-deni', name: 'Deni', role: 'DevOps & Cloud Engineer', dept: 'tech',
+        col: 26, row: 6, charIdx: 2, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'male', dormRoom: 'Kamar Rajawali 1 (Asrama Putra)', dormSpot: { col: 51, row: 20, dir: 'down', dormType: 'male' },
+        lemburReason: 'Pembaruan container Docker & monitoring sertifikat SSL Caddy',
+        task: '🐳 Monitoring Docker, Caddy HTTPS, & VPS', energy: 88, mood: 'semangat',
+        thought: 'Cek container Docker & sertifikat SSL Caddy HTTPS tetap aman.'
+      },
+      {
+        id: 'dev-clara', name: 'Clara', role: 'QA & Test Automation', dept: 'tech',
+        col: 29, row: 6, charIdx: 1, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'female', dormRoom: 'Kamar Melati 2 (Asrama Putri)', dormSpot: { col: 55, row: 3, dir: 'down', dormType: 'female' },
+        lemburReason: 'Eksekusi automated regression testing rilis siklus posting v3.2',
+        task: '🧪 Automasi testing siklus posting transaksi', energy: 82, mood: 'normal',
+        thought: 'Menjalankan e2e regression testing siklus approval jurnal.'
+      },
+      {
+        id: 'dev-adit', name: 'Adit', role: 'Cybersecurity Engineer', dept: 'tech',
+        col: 27, row: 9, charIdx: 0, dir: 'up', state: 'sitting', status: 'active',
+        gender: 'male', dormRoom: 'Kamar Rajawali 2 (Asrama Putra)', dormSpot: { col: 55, row: 20, dir: 'down', dormType: 'male' },
+        lemburReason: 'Audit jejak kriptografi hash SHA-256 untuk kepatuhan UU ITE',
+        task: '🔒 Penetrasi testing & Verifikasi hash SHA-256', energy: 85, mood: 'semangat',
+        thought: 'Audit checksum SHA-256 pada ledger anti-manipulasi.'
+      },
+      {
+        id: 'dev-yoga', name: 'Yoga', role: 'IT Support & Infra', dept: 'tech',
+        col: 26, row: 9, charIdx: 4, dir: 'right', state: 'walking', isWalker: true, routeType: 'devops',
+        gender: 'male', dormRoom: 'Kamar Rajawali 3 (Asrama Putra)', dormSpot: { col: 59, row: 20, dir: 'down', dormType: 'male' },
+        lemburReason: 'Pemeriksaan suhu pendingin rak server & switch gigabit LAN',
+        task: '🚶 Cek kabel LAN switch & temperatur server', energy: 80, mood: 'normal',
+        thought: 'Suhu rak server utama stabil di 20 derajat Celsius.'
+      },
 
       // --- ZONA 4: RUANG MEETING & AUDIT (Kiri Bawah) ---
-      // Maya & Rian di sisi kiri menghadap KANAN ke meja!
-      { id: 'staff-maya', name: 'Maya', role: 'Senior Auditor', dept: 'finance', col: 4, row: 18, charIdx: 1, dir: 'right', state: 'sitting', status: 'idle', task: '🔍 Tinjau audit log checksum SHA-256', energy: 84, mood: 'normal', thought: 'Memverifikasi jejak audit transaksi GL tidak ada kejanggalan.' },
-      { id: 'staff-rian', name: 'Rian', role: 'Staf Pajak e-Faktur', dept: 'finance', col: 4, row: 20, charIdx: 0, dir: 'right', state: 'sitting', status: 'idle', task: '📑 Rekapitulasi SPT Masa & PPh 23', energy: 78, mood: 'normal', thought: 'Menyiapkan arsip bukti potong PPh 23 untuk rekonsiliasi masa pajak.' },
-      // Dimas & Nadia di sisi kanan menghadap KIRI ke meja!
-      { id: 'staff-dimas', name: 'Dimas', role: 'Junior Accountant', dept: 'finance', col: 8, row: 18, charIdx: 5, dir: 'left', state: 'sitting', status: 'idle', task: '📋 Verifikasi fisik surat jalan & invoice vendor', energy: 86, mood: 'semangat', thought: 'Membandingkan fisik surat jalan vs angka faktur vendor Seventhsoft.' },
-      { id: 'staff-nadia', name: 'Nadia', role: 'Billing & AR Specialist', dept: 'finance', col: 8, row: 20, charIdx: 3, dir: 'left', state: 'sitting', status: 'idle', task: '💳 Monitor piutang dagang jatuh tempo', energy: 82, mood: 'normal', thought: 'Mengirimkan pengingat invoice jatuh tempo ke customer Seventhsoft.' },
-      // Doni di ujung meja bawah menghadap ke ATAS ke meja!
-      { id: 'staff-doni', name: 'Doni', role: 'Payroll Specialist', dept: 'finance', col: 6, row: 21, charIdx: 4, dir: 'up', state: 'sitting', status: 'idle', task: '💼 Perhitungan slip gaji & potongan PPh 21', energy: 76, mood: 'normal', thought: 'Menghitung rincian potongan BPJS dan PPh 21 staf Seventhsoft.' },
+      {
+        id: 'staff-maya', name: 'Maya', role: 'Senior Auditor', dept: 'finance',
+        col: 4, row: 18, charIdx: 1, dir: 'right', state: 'sitting', status: 'idle',
+        gender: 'female', dormRoom: 'Kamar Melati 3 (Asrama Putri)', dormSpot: { col: 59, row: 3, dir: 'down', dormType: 'female' },
+        lemburReason: 'Audit komparasi dokumen invoice fisik vs transaksi buku besar',
+        task: '🔍 Tinjau audit log checksum SHA-256', energy: 84, mood: 'normal',
+        thought: 'Memverifikasi jejak audit transaksi GL tidak ada kejanggalan.'
+      },
+      {
+        id: 'staff-rian', name: 'Rian', role: 'Staf Pajak e-Faktur', dept: 'finance',
+        col: 4, row: 20, charIdx: 0, dir: 'right', state: 'sitting', status: 'idle',
+        gender: 'male', dormRoom: 'Kamar Rajawali 4 (Asrama Putra)', dormSpot: { col: 63, row: 20, dir: 'down', dormType: 'male' },
+        lemburReason: 'Pengecekan kelengkapan bukti potong e-Faktur PPh 23 masa pajak',
+        task: '📑 Rekapitulasi SPT Masa & PPh 23', energy: 78, mood: 'normal',
+        thought: 'Menyiapkan arsip bukti potong PPh 23 untuk rekonsiliasi masa pajak.'
+      },
+      {
+        id: 'staff-dimas', name: 'Dimas', role: 'Junior Accountant', dept: 'finance',
+        col: 8, row: 18, charIdx: 5, dir: 'left', state: 'sitting', status: 'idle',
+        gender: 'male', dormRoom: 'Kamar Rajawali 5 (Asrama Putra)', dormSpot: { col: 67, row: 20, dir: 'down', dormType: 'male' },
+        lemburReason: 'Pencocokan fisik surat jalan logistik vs faktur vendor',
+        task: '📋 Verifikasi fisik surat jalan & invoice vendor', energy: 86, mood: 'semangat',
+        thought: 'Membandingkan fisik surat jalan vs angka faktur vendor Seventhsoft.'
+      },
+      {
+        id: 'staff-nadia', name: 'Nadia', role: 'Billing & AR Specialist', dept: 'finance',
+        col: 8, row: 20, charIdx: 3, dir: 'left', state: 'sitting', status: 'idle',
+        gender: 'female', dormRoom: 'Kamar Melati 4 (Asrama Putri)', dormSpot: { col: 63, row: 3, dir: 'down', dormType: 'female' },
+        lemburReason: 'Follow-up penagihan piutang dagang customer jatuh tempo',
+        task: '💳 Monitor piutang dagang jatuh tempo', energy: 82, mood: 'normal',
+        thought: 'Mengirimkan pengingat invoice jatuh tempo ke customer Seventhsoft.'
+      },
+      {
+        id: 'staff-doni', name: 'Doni', role: 'Payroll Specialist', dept: 'finance',
+        col: 6, row: 21, charIdx: 4, dir: 'up', state: 'sitting', status: 'idle',
+        gender: 'male', dormRoom: 'Kamar Rajawali 6 (Asrama Putra)', dormSpot: { col: 71, row: 20, dir: 'down', dormType: 'male' },
+        lemburReason: 'Finalisasi rekapitulasi slip gaji bulanan & iuran BPJS karyawan',
+        task: '💼 Perhitungan slip gaji & potongan PPh 21', energy: 76, mood: 'normal',
+        thought: 'Menghitung rincian potongan BPJS dan PPh 21 staf Seventhsoft.'
+      },
 
       // --- ZONA 5: PRODUCT & SALES WING (Tengah Bawah) ---
-      // Farhan, Lina, Bagus duduk di Row 16 menghadap ke ATAS ke meja Row 15!
-      { id: 'biz-farhan', name: 'Farhan', role: 'Product Manager', dept: 'product', col: 14, row: 16, charIdx: 0, dir: 'up', state: 'sitting', status: 'idle', task: '📅 Perencanaan rilis fitur Seventhsoft v3.2', energy: 90, mood: 'semangat', thought: 'Menyusun roadmap rilis otomatisasi GL AI di kuartal berikutnya.' },
-      { id: 'biz-lina', name: 'Lina', role: 'UI/UX Designer', dept: 'product', col: 17, row: 16, charIdx: 1, dir: 'up', state: 'sitting', status: 'idle', task: '🎨 Desain prototipe navigasi modul gudang', energy: 84, mood: 'semangat', thought: 'Membuat palet warna UI Seventhsoft yang nyaman untuk mata akuntan.' },
-      { id: 'biz-bagus', name: 'Bagus', role: 'Enterprise Sales', dept: 'product', col: 20, row: 16, charIdx: 2, dir: 'up', state: 'sitting', status: 'idle', task: '🤝 Demo otomatisasi AI ke klien korporasi', energy: 94, mood: 'semangat', thought: 'Siap presentasi demo otomatisasi invoice Seventhsoft ke calon klien!' },
-      // Putri, Tania duduk di Row 19 menghadap ke ATAS ke meja Row 18!
-      { id: 'biz-putri', name: 'Putri', role: 'Technical Writer', dept: 'product', col: 15, row: 19, charIdx: 3, dir: 'up', state: 'sitting', status: 'idle', task: '📖 Update dokumentasi SOP Four-Eyes Principle', energy: 80, mood: 'normal', thought: 'Menyempurnakan panduan SOP Four-Eyes Principle di GitHub repo.' },
-      { id: 'biz-tania', name: 'Tania', role: 'Customer Success', dept: 'product', col: 19, row: 19, charIdx: 4, dir: 'up', state: 'sitting', status: 'idle', task: '🎧 Pandu klien akuntan baru via ticketing', energy: 86, mood: 'semangat', thought: 'Membantu onboarding klien baru mengoperasikan modul Kas & Bank.' },
+      {
+        id: 'biz-farhan', name: 'Farhan', role: 'Product Manager', dept: 'product',
+        col: 14, row: 16, charIdx: 0, dir: 'up', state: 'sitting', status: 'idle',
+        gender: 'male', dormRoom: 'Kamar Elang 1 (Asrama Putra)', dormSpot: { col: 51, row: 24, dir: 'down', dormType: 'male' },
+        lemburReason: 'Penyusunan sprint backlog fitur baru otomatisasi akuntansi AI',
+        task: '📅 Perencanaan rilis fitur Seventhsoft v3.2', energy: 90, mood: 'semangat',
+        thought: 'Menyusun roadmap rilis otomatisasi GL AI di kuartal berikutnya.'
+      },
+      {
+        id: 'biz-lina', name: 'Lina', role: 'UI/UX Designer', dept: 'product',
+        col: 17, row: 16, charIdx: 1, dir: 'up', state: 'sitting', status: 'idle',
+        gender: 'female', dormRoom: 'Kamar Melati 5 (Asrama Putri)', dormSpot: { col: 67, row: 3, dir: 'down', dormType: 'female' },
+        lemburReason: 'Eksplorasi wireframe antarmuka modul gudang Seventhsoft',
+        task: '🎨 Desain prototipe navigasi modul gudang', energy: 84, mood: 'semangat',
+        thought: 'Membuat palet warna UI Seventhsoft yang nyaman untuk mata akuntan.'
+      },
+      {
+        id: 'biz-bagus', name: 'Bagus', role: 'Enterprise Sales', dept: 'product',
+        col: 20, row: 16, charIdx: 2, dir: 'up', state: 'sitting', status: 'idle',
+        gender: 'male', dormRoom: 'Kamar Elang 2 (Asrama Putra)', dormSpot: { col: 55, row: 24, dir: 'down', dormType: 'male' },
+        lemburReason: 'Persiapan materi demo proposal lisensi korporasi untuk klien',
+        task: '🤝 Demo otomatisasi AI ke klien korporasi', energy: 94, mood: 'semangat',
+        thought: 'Siap presentasi demo otomatisasi invoice Seventhsoft ke calon klien!'
+      },
+      {
+        id: 'biz-putri', name: 'Putri', role: 'Technical Writer', dept: 'product',
+        col: 15, row: 19, charIdx: 3, dir: 'up', state: 'sitting', status: 'idle',
+        gender: 'female', dormRoom: 'Kamar Mawar 1 (Asrama Putri)', dormSpot: { col: 51, row: 8, dir: 'down', dormType: 'female' },
+        lemburReason: 'Penyempurnaan panduan SOP Four-Eyes Principle di GitHub repo',
+        task: '📖 Update dokumentasi SOP Four-Eyes Principle', energy: 80, mood: 'normal',
+        thought: 'Menyempurnakan panduan SOP Four-Eyes Principle di GitHub repo.'
+      },
+      {
+        id: 'biz-tania', name: 'Tania', role: 'Customer Success', dept: 'product',
+        col: 19, row: 19, charIdx: 4, dir: 'up', state: 'sitting', status: 'idle',
+        gender: 'female', dormRoom: 'Kamar Mawar 2 (Asrama Putri)', dormSpot: { col: 55, row: 8, dir: 'down', dormType: 'female' },
+        lemburReason: 'Menangani tiket bantuan teknis pelanggan prioritas modul Kas',
+        task: '🎧 Pandu klien akuntan baru via ticketing', energy: 86, mood: 'semangat',
+        thought: 'Membantu onboarding klien baru mengoperasikan modul Kas & Bank.'
+      },
 
       // --- ZONA 6: PANTRY & BREAK LOUNGE (Kanan) ---
-      { id: 'cafe-koko', name: 'Koko', role: 'Barista Kantor', dept: 'lounge', col: 38, row: 4, charIdx: 5, dir: 'down', state: 'standing', status: 'idle', task: '☕ Seduh kopi espresso untuk programmer & akuntan', energy: 98, mood: 'semangat', thought: 'Biji kopi arabika fresh grind siap seduh untuk semua tim!' },
-      { id: 'cafe-buan', name: 'Bu Ani', role: 'Chef Kantin', dept: 'lounge', col: 41, row: 4, charIdx: 3, dir: 'down', state: 'standing', status: 'idle', task: '🥪 Siapkan snack sehat & kue sore kantor', energy: 95, mood: 'semangat', thought: 'Menu makan siang jam 12:00 hari ini nasi box lezat & snack sehat!' },
-      // Gilang duduk santai di Sofa Samping kiri (Col 34, Row 16) menghadap KANAN ke Meja Kopi!
-      { id: 'lounge-gilang', name: 'Gilang', role: 'Staff Istirahat Lounge', dept: 'lounge', col: 34, row: 16, charIdx: 2, dir: 'right', state: 'sitting', status: 'idle', task: '🎮 Main game konsol di sofa lounge', energy: 90, mood: 'semangat', thought: 'Rehat sejenak sambil main game konsol bareng Gitcat!' },
-      { id: 'staff-siti-jalan', name: 'Siti', role: 'Staff Keuangan', dept: 'lounge', col: 22, row: 11, charIdx: 1, dir: 'right', state: 'walking', isWalker: true, routeType: 'coffee', task: '🚶 OTW ambil kopi espresso di pantry', energy: 84, mood: 'semangat', thought: 'Jalan santai ke pantry Mas Koko buat refill kopi espresso.' },
+      {
+        id: 'cafe-koko', name: 'Koko', role: 'Barista Kantor', dept: 'lounge',
+        col: 38, row: 4, charIdx: 5, dir: 'down', state: 'standing', status: 'idle',
+        gender: 'male', dormRoom: 'Kamar Elang 3 (Asrama Putra)', dormSpot: { col: 59, row: 24, dir: 'down', dormType: 'male' },
+        lemburReason: 'Pembersihan mesin espresso & restock biji kopi arabika',
+        task: '☕ Seduh kopi espresso untuk programmer & akuntan', energy: 98, mood: 'semangat',
+        thought: 'Biji kopi arabika fresh grind siap seduh untuk semua tim!'
+      },
+      {
+        id: 'cafe-buan', name: 'Bu Ani', role: 'Chef Kantin', dept: 'lounge',
+        col: 41, row: 4, charIdx: 3, dir: 'down', state: 'standing', status: 'idle',
+        gender: 'female', dormRoom: 'Kamar Mawar 3 (Asrama Putri)', dormSpot: { col: 59, row: 8, dir: 'down', dormType: 'female' },
+        lemburReason: 'Persiapan menu sarapan pagi & snack box karyawan asrama',
+        task: '🥪 Siapkan snack sehat & kue sore kantor', energy: 95, mood: 'semangat',
+        thought: 'Menu makan siang jam 12:00 hari ini nasi box lezat & snack sehat!'
+      },
+      {
+        id: 'lounge-gilang', name: 'Gilang', role: 'Staff Istirahat Lounge', dept: 'lounge',
+        col: 34, row: 16, charIdx: 2, dir: 'right', state: 'sitting', status: 'idle',
+        gender: 'male', dormRoom: 'Kamar Elang 4 (Asrama Putra)', dormSpot: { col: 63, row: 24, dir: 'down', dormType: 'male' },
+        lemburReason: 'Pengecekan fasilitas lounge dan kebersihan area santai kantor',
+        task: '🎮 Main game konsol di sofa lounge', energy: 90, mood: 'semangat',
+        thought: 'Rehat sejenak sambil main game konsol bareng Gitcat!'
+      },
+      {
+        id: 'staff-siti-jalan', name: 'Siti', role: 'Staff Keuangan', dept: 'lounge',
+        col: 22, row: 11, charIdx: 1, dir: 'right', state: 'walking', isWalker: true, routeType: 'coffee',
+        gender: 'female', dormRoom: 'Kamar Mawar 4 (Asrama Putri)', dormSpot: { col: 63, row: 8, dir: 'down', dormType: 'female' },
+        lemburReason: 'Penyusunan rekapitulasi bukti kas operasional harian',
+        task: '🚶 OTW ambil kopi espresso di pantry', energy: 84, mood: 'semangat',
+        thought: 'Jalan santai ke pantry Mas Koko buat refill kopi espresso.'
+      },
 
       // --- ZONA 7: LOBBY & RECEPTION (Bawah Tengah) ---
-      // Bella duduk di belakang Front Desk (Col 28, Row 22) menghadap ke BAWAH menyambut tamu!
-      { id: 'lobby-bella', name: 'Bella', role: 'Front Desk Receptionist', dept: 'lounge', col: 28, row: 22, charIdx: 5, dir: 'down', state: 'sitting', status: 'active', task: '🛎️ Sambut tamu klien akuntansi di lobby', energy: 92, mood: 'semangat', thought: 'Menyapa tamu korporasi Seventhsoft dengan ramah di front desk.' }
+      {
+        id: 'lobby-bella', name: 'Bella', role: 'Front Desk Receptionist', dept: 'lounge',
+        col: 28, row: 22, charIdx: 5, dir: 'down', state: 'sitting', status: 'active',
+        gender: 'female', dormRoom: 'Kamar Mawar 5 (Asrama Putri)', dormSpot: { col: 67, row: 8, dir: 'down', dormType: 'female' },
+        lemburReason: 'Rekapitulasi buku tamu kunjungan klien akuntansi hari ini',
+        task: '🛎️ Sambut tamu klien akuntansi di lobby', energy: 92, mood: 'semangat',
+        thought: 'Menyapa tamu korporasi Seventhsoft dengan ramah di front desk.'
+      }
     ];
 
     this.employeeData.forEach(emp => {
@@ -232,7 +431,14 @@ export class VirtualOfficePixel {
       emp.fidgetFrame = 0;
       emp.subAction = null;
       emp.pathTarget = null;
+      emp.waypoints = [];
+      emp.isLembur = false;
+      emp.isSleeping = false;
+      emp.wakeEmoteTimer = 0;
     });
+
+    // Inisialisasi Daftar Kasur Asrama
+    this.initDormBeds();
 
     this.pets = [
       { id: 'gitcat', name: 'Gitcat', type: 'cat', col: 37, row: 19, dir: 'down', state: 'idle', frame: 0, timer: 0 },
@@ -273,6 +479,52 @@ export class VirtualOfficePixel {
         emp.speed = 0.8;
       }
     });
+  }
+
+  // ==========================================================================
+  // 2.1 PEMETAAN KASUR ASRAMA PUTRI & ASRAMA PUTRA
+  // ==========================================================================
+  initDormBeds() {
+    this.dormBeds = [
+      // --- ASRAMA PUTRI (10 Kasur, Rows 2-13, Cols 49-74) ---
+      // Baris 1 (Row 3): Sarah, Clara, Maya, Nadia, Lina
+      { col: 51, row: 3, empId: 'dev-sarah', dormType: 'female', label: 'Sarah' },
+      { col: 55, row: 3, empId: 'dev-clara', dormType: 'female', label: 'Clara' },
+      { col: 59, row: 3, empId: 'staff-maya', dormType: 'female', label: 'Maya' },
+      { col: 63, row: 3, empId: 'staff-nadia', dormType: 'female', label: 'Nadia' },
+      { col: 67, row: 3, empId: 'biz-lina', dormType: 'female', label: 'Lina' },
+
+      // Baris 2 (Row 8): Putri, Tania, Bu Ani, Siti, Bella
+      { col: 51, row: 8, empId: 'biz-putri', dormType: 'female', label: 'Putri' },
+      { col: 55, row: 8, empId: 'biz-tania', dormType: 'female', label: 'Tania' },
+      { col: 59, row: 8, empId: 'cafe-buan', dormType: 'female', label: 'Bu Ani' },
+      { col: 63, row: 8, empId: 'staff-siti-jalan', dormType: 'female', label: 'Siti' },
+      { col: 67, row: 8, empId: 'lobby-bella', dormType: 'female', label: 'Bella' },
+
+      // --- ASRAMA PUTRA (17 Kasur, Rows 15-27, Cols 49-74) ---
+      // Baris 1 (Row 16): Mikhael, Kevin, Reza, Aris, Bambang, Fikri
+      { col: 51, row: 16, empId: 'lead-finance', dormType: 'male', label: 'Mikhael' },
+      { col: 55, row: 16, empId: 'dev-kevin', dormType: 'male', label: 'Kevin' },
+      { col: 59, row: 16, empId: 'dev-reza', dormType: 'male', label: 'Reza' },
+      { col: 63, row: 16, empId: 'dev-aris', dormType: 'male', label: 'Aris' },
+      { col: 67, row: 16, empId: 'dev-bambang', dormType: 'male', label: 'Bambang' },
+      { col: 71, row: 16, empId: 'dev-fikri', dormType: 'male', label: 'Fikri' },
+
+      // Baris 2 (Row 20): Deni, Adit, Yoga, Rian, Dimas, Doni
+      { col: 51, row: 20, empId: 'dev-deni', dormType: 'male', label: 'Deni' },
+      { col: 55, row: 20, empId: 'dev-adit', dormType: 'male', label: 'Adit' },
+      { col: 59, row: 20, empId: 'dev-yoga', dormType: 'male', label: 'Yoga' },
+      { col: 63, row: 20, empId: 'staff-rian', dormType: 'male', label: 'Rian' },
+      { col: 67, row: 20, empId: 'staff-dimas', dormType: 'male', label: 'Dimas' },
+      { col: 71, row: 20, empId: 'staff-doni', dormType: 'male', label: 'Doni' },
+
+      // Baris 3 (Row 24): Farhan, Bagus, Koko, Gilang, Budi
+      { col: 51, row: 24, empId: 'biz-farhan', dormType: 'male', label: 'Farhan' },
+      { col: 55, row: 24, empId: 'biz-bagus', dormType: 'male', label: 'Bagus' },
+      { col: 59, row: 24, empId: 'cafe-koko', dormType: 'male', label: 'Koko' },
+      { col: 63, row: 24, empId: 'lounge-gilang', dormType: 'male', label: 'Gilang' },
+      { col: 67, row: 24, empId: 'staff-budi-kurir', dormType: 'male', label: 'Budi' }
+    ];
   }
 
   // ==========================================================================
@@ -491,6 +743,65 @@ export class VirtualOfficePixel {
     add('cushion_front', 28, 22);
     add('plant_large', 25, 23);
     add('plant_large', 31, 23);
+
+    // --- ZONA 8: JALUR TAMAN PENGHUBUNG KANTOR - ASRAMA (Cols 44-47) ---
+    add('plant_large', 44, 2);
+    add('plant_large', 44, 25);
+    add('plant_leafy', 47, 3);
+    add('plant_leafy', 47, 24);
+
+    // --- ZONA 9: ASRAMA PUTRI (Cols 48-75, Rows 2-13) ---
+    add('painting_small', 52, 0);
+    add('clock', 60, 0);
+    add('painting_large', 68, 0);
+
+    // Meja samping tempat tidur (nightstands) Asrama Putri
+    add('small_table', 53, 3);
+    add('small_table', 57, 3);
+    add('small_table', 61, 3);
+    add('small_table', 65, 3);
+    add('small_table', 69, 3);
+    add('small_table', 53, 8);
+    add('small_table', 57, 8);
+    add('small_table', 61, 8);
+    add('small_table', 65, 8);
+    add('small_table', 69, 8);
+
+    // Lounge & Rak Buku Asrama Putri
+    add('double_bookshelf', 72, 1);
+    add('plant_leafy', 49, 2);
+    add('plant_large', 49, 11);
+    add('sofa_front', 71, 6);
+    add('coffee_table', 71, 8);
+    add('cushion_front', 73, 8);
+
+    // --- ZONA 10: ASRAMA PUTRA (Cols 48-75, Rows 15-27) ---
+    add('painting_large', 54, 14);
+    add('clock', 62, 14);
+    add('painting_small', 70, 14);
+
+    // Meja samping tempat tidur (nightstands) Asrama Putra
+    add('small_table', 53, 16);
+    add('small_table', 57, 16);
+    add('small_table', 61, 16);
+    add('small_table', 65, 16);
+    add('small_table', 69, 16);
+    add('small_table', 53, 20);
+    add('small_table', 57, 20);
+    add('small_table', 61, 20);
+    add('small_table', 65, 20);
+    add('small_table', 69, 20);
+    add('small_table', 53, 24);
+    add('small_table', 57, 24);
+    add('small_table', 61, 24);
+    add('small_table', 65, 24);
+
+    // Gaming Lounge & Rak Buku Asrama Putra
+    add('double_bookshelf', 73, 15);
+    add('sofa_front', 72, 21);
+    add('coffee_table', 72, 23);
+    add('cactus', 49, 15);
+    add('plant_large', 49, 25);
   }
 
   // ==========================================================================
@@ -612,8 +923,10 @@ export class VirtualOfficePixel {
       this.scheduleMode = 'LUNCH';
     } else if (timeVal >= 8.0 && timeVal < 17.0) {
       this.scheduleMode = 'WORK';
-    } else {
+    } else if (timeVal >= 17.0 && timeVal < 21.0) {
       this.scheduleMode = 'AFTER_HOURS';
+    } else {
+      this.scheduleMode = 'NIGHT';
     }
 
     if (oldMode !== this.scheduleMode) {
@@ -622,20 +935,18 @@ export class VirtualOfficePixel {
   }
 
   // ==========================================================================
-  // 6. REALISTIC LUNCH & SCHEDULE TRANSITION (NO MOB PILE!)
+  // 6. JADWAL KANTOR, PULANG KE ASRAMA & SISTEM LEMBUR REALISTIS
   // ==========================================================================
   handleScheduleTransition(mode) {
     if (mode === 'LUNCH') {
       console.log('🍱 [Jadwal] Jam 12.00 - 13.00: Istirahat Makan Siang!');
       this.triggerCelebration('🍱 Jam 12.00 - Istirahat Makan Siang Dimulai!');
 
-      // DISTRIBUSI ALAMI MAKAN SIANG (TIDAK SEMUA TUMPAH DI SATU TITIK):
-      // 1. Lounge Sofas (4 staf saja: Farhan, Bagus, Putri, Gilang)
       const loungeGroup = ['biz-farhan', 'biz-bagus', 'biz-putri'];
       const loungeSpots = [
-        { col: 36, row: 18, dir: 'up' },    // Front sofa
-        { col: 38, row: 16, dir: 'left' },  // Right sofa
-        { col: 36, row: 15, dir: 'down' }   // Coffee table
+        { col: 36, row: 18, dir: 'up' },
+        { col: 38, row: 16, dir: 'left' },
+        { col: 36, row: 15, dir: 'down' }
       ];
       loungeGroup.forEach((id, i) => {
         const emp = this.employeeData.find(e => e.id === id);
@@ -647,7 +958,6 @@ export class VirtualOfficePixel {
         }
       });
 
-      // 2. Pantry Counter (3 staf ke Barista Koko & Bu Ani: Siti, Clara, Fikri)
       const pantryGroup = ['dev-clara', 'dev-fikri', 'staff-siti-jalan'];
       const pantrySpots = [
         { col: 37, row: 6, dir: 'up' },
@@ -664,8 +974,6 @@ export class VirtualOfficePixel {
         }
       });
 
-      // 3. Boardroom Table (5 staf tim audit: Maya, Rian, Dimas, Nadia, Doni)
-      // Mereka sudah duduk melingkari meja rapat, cukup beralih ke mode makan!
       const meetingGroup = ['staff-maya', 'staff-rian', 'staff-dimas', 'staff-nadia', 'staff-doni'];
       meetingGroup.forEach(id => {
         const emp = this.employeeData.find(e => e.id === id);
@@ -675,8 +983,6 @@ export class VirtualOfficePixel {
         }
       });
 
-      // 4. Staf lainnya (Mikhael, Kevin, Sarah, Reza, dll.)
-      // Santai di meja masing-masing sambil buka bekal (lunchbox), monitor PC OFF.
       this.employeeData.forEach(emp => {
         if (!loungeGroup.includes(emp.id) && !pantryGroup.includes(emp.id)) {
           emp.mood = 'makan';
@@ -688,22 +994,111 @@ export class VirtualOfficePixel {
 
     } else if (mode === 'WORK') {
       console.log('💼 [Jadwal] Jam Kerja Aktif (08:00 - 17:00)!');
-      // Semua yang sedang di luar meja berjalan kembali ke kursi masing-masing
+      this.triggerCelebration('☀️ Jam 08:00 Kantor Dibuka! Semua staf kembali ke meja kerja.');
+
+      // Semua yang sedang di asrama / makan kembali ke meja masing-masing
       this.employeeData.forEach(emp => {
+        emp.isSleeping = false;
+        emp.isLembur = false;
+        emp.energy = 100;
+        emp.mood = 'semangat';
+        emp.thought = 'Pagi cerah! Semangat bekerja di Kantor Seventhsoft!';
+
         if (emp.subAction === 'at_lunch' || emp.subAction === 'to_lunch') {
           emp.subAction = 'back_desk';
+        } else if (emp.isWalker) {
+          emp.subAction = null;
+        } else if (emp.col !== emp.homeCol || emp.row !== emp.homeRow) {
+          // Buat jalur kembali dari asrama ke kantor
+          emp.subAction = 'back_desk';
+          const dormDoorRow = emp.gender === 'female' ? 7 : 18;
+          emp.waypoints = [
+            { col: emp.col, row: emp.row + 2 },
+            { col: 48, row: dormDoorRow },
+            { col: 45, row: 12 },
+            { col: 43, row: 12 },
+            { col: 24, row: 12 },
+            { col: emp.homeCol, row: 12 },
+            { col: emp.homeCol, row: emp.homeRow }
+          ];
+        } else {
+          emp.state = 'sitting';
+          emp.dir = emp.homeDir;
+          emp.status = 'active';
         }
-        emp.energy = Math.max(80, emp.energy);
-        emp.mood = 'semangat';
-        emp.thought = 'Kembali fokus mengerjakan tugas akuntansi Seventhsoft.';
       });
-    } else if (mode === 'AFTER_HOURS') {
-      console.log('🌙 [Jadwal] Jam 17:00+ Kantor Tutup.');
+
+    } else if (mode === 'AFTER_HOURS' || mode === 'NIGHT') {
+      console.log(`🌙 [Jadwal] Jam Pulang / Malam (${mode}).`);
+
+      // 5 Pegawai Kunci yang Lembur Kantor beserta alasan spesifiknya
+      const defaultLemburIds = ['lead-finance', 'dev-kevin', 'dev-aris', 'dev-bambang', 'dev-clara'];
+
       this.employeeData.forEach(emp => {
-        emp.mood = 'lelah';
-        emp.thought = 'Jam kantor selesai. Rekapitulasi pembukuan hari ini rampung.';
+        // AI Agents tetap standby di server rack kantor
+        if (emp.gender === 'ai') {
+          emp.isLembur = true;
+          emp.state = 'sitting';
+          emp.status = 'active';
+          emp.typingBurst = 15.0;
+          emp.thought = `Standby server: ${emp.lemburReason}`;
+          return;
+        }
+
+        // Karyawan Lembur: Tetap di meja kantor, bekerja aktif dengan monitor menyala
+        if (defaultLemburIds.includes(emp.id) || emp.isLembur) {
+          emp.isLembur = true;
+          emp.isSleeping = false;
+          emp.subAction = null;
+          emp.state = 'sitting';
+          emp.dir = emp.homeDir;
+          emp.status = 'active';
+          emp.typingBurst = 30.0;
+          emp.mood = 'semangat';
+          emp.thought = `Masih lembur di meja kantor: ${emp.lemburReason}`;
+        } else {
+          // Karyawan Non-Lembur: Pulang berjalan kaki ke Asrama Putri / Putra!
+          emp.isLembur = false;
+          emp.status = 'idle';
+          emp.typingBurst = 0;
+
+          if (emp.col === emp.homeCol && emp.row === emp.homeRow) {
+            emp.subAction = 'to_dorm';
+            const dormDoorRow = emp.gender === 'female' ? 7 : 18;
+
+            emp.waypoints = [
+              { col: emp.col, row: 12 },      // Ke lorong tengah kantor
+              { col: 43, row: 12 },           // Pintu keluar kantor
+              { col: 45, row: 12 },           // Masuk jalan setapak taman
+              { col: 45, row: dormDoorRow },  // Jalan setapak depan asrama
+              { col: 48, row: dormDoorRow },  // Masuk pintu asrama
+              { col: emp.dormSpot.col, row: emp.dormSpot.row + 2 }, // Lorong depan kasur
+              { col: emp.dormSpot.col, row: emp.dormSpot.row }      // Tiba di kasur kamar!
+            ];
+
+            emp.thought = `Jam kantor selesai. Berjalan santai pulang ke ${emp.dormRoom}...`;
+          } else if (mode === 'NIGHT' && emp.dormSpot) {
+            // Jika sudah di asrama dan malam hari, masuk kasur dan tidur!
+            emp.isSleeping = true;
+            emp.state = 'sleeping';
+            emp.mood = 'tidur';
+            emp.thought = 'Zzz... Tidur nyenyak di kasur asrama...';
+          }
+        }
       });
+
+      // Notifikasi perayaan & dialog lembur
+      if (mode === 'AFTER_HOURS') {
+        this.triggerCelebration('🌙 Jam 17:00 Kantor Tutup! 5 Pegawai Lembur & 22 Pegawai Pulang ke Asrama');
+        this.triggerEmployeeSpeech('dev-kevin', 'Kevin', '🌙 Masih lembur nih: Deploy hotfix webhook API Seventhsoft & load testing!');
+      } else {
+        this.triggerCelebration('💤 Pukul 22:00 Waktu Tidur Asrama! Pegawai lembur tetap siaga di kantor.');
+        this.triggerEmployeeSpeech('lead-finance', 'Mikhael', '🌙 Masih lembur otorisasi closing GL akhir bulan. Teman-teman selamat istirahat di asrama!');
+      }
     }
+
+    window.dispatchEvent(new CustomEvent('lembur_updated'));
+    this.updateScheduleDisplay();
   }
 
   updateScheduleDisplay() {
@@ -718,13 +1113,22 @@ export class VirtualOfficePixel {
 
     if (badgeEl) {
       badgeEl.className = `schedule-mode-pill ${this.scheduleMode.toLowerCase().replace('_', '-')}`;
+      const lemburCount = this.employeeData.filter(e => e.isLembur).length;
       if (this.scheduleMode === 'WORK') {
         badgeEl.textContent = '🟢 JAM KERJA (08:00 - 17:00)';
       } else if (this.scheduleMode === 'LUNCH') {
         badgeEl.textContent = '🍱 MAKAN SIANG (12:00 - 13:00)';
+      } else if (this.scheduleMode === 'AFTER_HOURS') {
+        badgeEl.textContent = `🌙 PULANG KANTOR (${lemburCount} LEMBUR)`;
       } else {
-        badgeEl.textContent = '🌙 PULANG KANTOR / LEMBUR';
+        badgeEl.textContent = `💤 MALAM / TIDUR ASRAMA (${lemburCount} LEMBUR)`;
       }
+    }
+
+    const lemburCountEl = document.getElementById('lembur-count');
+    if (lemburCountEl) {
+      const count = this.employeeData.filter(e => e.isLembur).length;
+      lemburCountEl.textContent = String(count);
     }
   }
 
@@ -839,10 +1243,29 @@ export class VirtualOfficePixel {
       lelah: '😫 Lelah / Butuh Rehat',
       badmood: '😤 Bad Mood / Pusing',
       makan: '🍱 Sedang Makan Siang',
-      ngopi: '☕ Sedang Menikmati Kopi'
+      ngopi: '☕ Sedang Menikmati Kopi',
+      tidur: '💤 Tidur Nyenyak di Asrama'
     };
 
     if (moodBadge) moodBadge.textContent = moodMap[emp.mood] || '😊 Aktif';
+
+    const statusEl = document.getElementById('insp-status');
+    if (statusEl) {
+      if (emp.isSleeping) {
+        statusEl.textContent = '💤 Tidur Asrama';
+        statusEl.className = 'stat-val blue';
+      } else if (emp.isLembur) {
+        statusEl.textContent = '🌙 Lembur Kantor';
+        statusEl.className = 'stat-val amber';
+      } else if (emp.subAction === 'in_dorm') {
+        statusEl.textContent = '🏠 Santai Asrama';
+        statusEl.className = 'stat-val green';
+      } else {
+        statusEl.textContent = emp.status === 'active' || emp.status === 'typing' ? 'Aktif Produktif' : 'Standby';
+        statusEl.className = 'stat-val green';
+      }
+    }
+
     if (energyBar) {
       energyBar.style.width = `${emp.energy}%`;
       energyBar.style.background = emp.energy > 60 ? 'linear-gradient(90deg, #10b981, #059669)' :
@@ -880,6 +1303,47 @@ export class VirtualOfficePixel {
     }
 
     if (this.selectedEmployee && this.selectedEmployee.id === agentId) {
+      this.updateInspectorUI(emp);
+    }
+  }
+
+  wakeEmployeeToWork(empId, taskText) {
+    const emp = this.employeeData.find(e => e.id === empId);
+    if (!emp) return;
+
+    emp.isSleeping = false;
+    emp.isLembur = true;
+    emp.energy = 95;
+    emp.mood = 'semangat';
+    emp.status = 'active';
+    if (taskText) emp.task = taskText;
+    emp.thought = `🏃 Langsung bangun dari kasur asrama dan segera berangkat ke kantor untuk tugas: ${taskText || 'prioritas malam'}!`;
+
+    // Jika pegawai sedang di asrama, buat waypoints jalan ke kantor!
+    const isAtDorm = emp.subAction === 'in_dorm' || emp.subAction === 'to_dorm' || (emp.dormSpot && Math.abs(emp.col - emp.dormSpot.col) < 4);
+    if (isAtDorm || emp.col !== emp.homeCol || emp.row !== emp.homeRow) {
+      const dormDoorRow = emp.gender === 'female' ? 7 : 18;
+      emp.subAction = 'back_desk';
+      emp.waypoints = [
+        { col: emp.col || (emp.dormSpot ? emp.dormSpot.col : 52), row: emp.row || (emp.dormSpot ? emp.dormSpot.row : dormDoorRow) },
+        { col: 48, row: dormDoorRow },
+        { col: 45, row: dormDoorRow },
+        { col: 45, row: 12 },
+        { col: 43, row: 12 },
+        { col: 24, row: 12 },
+        { col: emp.homeCol, row: 12 },
+        { col: emp.homeCol, row: emp.homeRow }
+      ];
+      this.triggerEmployeeSpeech(emp.id, emp.name, '🏃 Siap bangun dari kasur asrama! OTW jalan ke meja kantor sekarang!');
+    } else {
+      emp.state = 'sitting';
+      emp.dir = emp.homeDir;
+      emp.typingBurst = 25.0;
+    }
+
+    this.focusOnEmployee(emp);
+    this.updateScheduleDisplay();
+    if (this.selectedEmployee && this.selectedEmployee.id === empId) {
       this.updateInspectorUI(emp);
     }
   }
@@ -1091,14 +1555,57 @@ export class VirtualOfficePixel {
         emp.state = 'sitting';
         emp.dir = emp.lunchSpot ? emp.lunchSpot.dir : 'down';
       });
-    } else if (emp.subAction === 'back_desk') {
-      const homeX = emp.homeCol * TILE_SIZE + 8;
-      const homeY = emp.homeRow * TILE_SIZE + 8;
-      this.moveTowards(emp, homeX, homeY, dt, () => {
-        emp.subAction = null;
-        emp.state = 'sitting';
-        emp.dir = emp.homeDir;
+    } else if (emp.subAction === 'to_dorm') {
+      this.followWaypoints(emp, dt, () => {
+        emp.subAction = 'in_dorm';
+        if (emp.dormSpot) {
+          emp.x = emp.dormSpot.col * TILE_SIZE + 8;
+          emp.y = emp.dormSpot.row * TILE_SIZE + 8;
+          emp.col = emp.dormSpot.col;
+          emp.row = emp.dormSpot.row;
+          emp.dir = emp.dormSpot.dir || 'down';
+        }
+        if (this.scheduleMode === 'NIGHT') {
+          emp.state = 'sleeping';
+          emp.isSleeping = true;
+          emp.mood = 'tidur';
+          emp.thought = 'Zzz... Tidur nyenyak di kasur asrama Seventhsoft.';
+        } else {
+          emp.state = 'sitting';
+          emp.isSleeping = false;
+          emp.mood = 'normal';
+          emp.thought = `Santai malam di ${emp.dormRoom || 'asrama'} Seventhsoft.`;
+        }
       });
+    } else if (emp.subAction === 'back_desk') {
+      if (emp.waypoints && emp.waypoints.length > 0) {
+        this.followWaypoints(emp, dt, () => {
+          emp.subAction = null;
+          emp.x = emp.homeCol * TILE_SIZE + 8;
+          emp.y = emp.homeRow * TILE_SIZE + 8;
+          emp.col = emp.homeCol;
+          emp.row = emp.homeRow;
+          emp.state = 'sitting';
+          emp.dir = emp.homeDir;
+          emp.status = 'active';
+          emp.isSleeping = false;
+          emp.typingBurst = 20.0;
+        });
+      } else {
+        const homeX = emp.homeCol * TILE_SIZE + 8;
+        const homeY = emp.homeRow * TILE_SIZE + 8;
+        this.moveTowards(emp, homeX, homeY, dt, () => {
+          emp.subAction = null;
+          emp.x = homeX;
+          emp.y = homeY;
+          emp.col = emp.homeCol;
+          emp.row = emp.homeRow;
+          emp.state = 'sitting';
+          emp.dir = emp.homeDir;
+          emp.status = 'active';
+          emp.isSleeping = false;
+        });
+      }
     }
   }
 
@@ -1242,6 +1749,24 @@ export class VirtualOfficePixel {
       emp.walkProgress = (emp.walkProgress || 0) + dt * 6;
       emp.animFrame = Math.floor(emp.walkProgress) % 4;
     }
+  }
+
+  followWaypoints(emp, dt, onComplete) {
+    if (!emp.waypoints || emp.waypoints.length === 0) {
+      if (onComplete) onComplete();
+      return;
+    }
+    const target = emp.waypoints[0];
+    const targetX = target.col * TILE_SIZE + 8;
+    const targetY = target.row * TILE_SIZE + 8;
+    this.moveTowards(emp, targetX, targetY, dt, () => {
+      emp.col = target.col;
+      emp.row = target.row;
+      emp.waypoints.shift();
+      if (emp.waypoints.length === 0) {
+        if (onComplete) onComplete();
+      }
+    });
   }
 
   updateWalkers(dt) {
@@ -1468,11 +1993,23 @@ export class VirtualOfficePixel {
       });
     });
 
+    if (this.dormBeds) {
+      this.dormBeds.forEach(bed => {
+        renderQueue.push({
+          type: 'dorm_bed',
+          ySort: bed.row * TILE_SIZE + 24,
+          bed
+        });
+      });
+    }
+
     renderQueue.sort((a, b) => a.ySort - b.ySort);
 
     renderQueue.forEach(q => {
       if (q.type === 'furniture') {
         this.drawFurnitureItem(ctx, q.item, q.img);
+      } else if (q.type === 'dorm_bed') {
+        this.drawDormBed(ctx, q.bed);
       } else if (q.type === 'employee') {
         this.drawEmployee(ctx, q.emp);
       } else if (q.type === 'pet') {
@@ -1493,7 +2030,97 @@ export class VirtualOfficePixel {
     ctx.restore();
   }
 
+  drawDormBed(ctx, bed) {
+    const bx = bed.col * TILE_SIZE - 4;
+    const by = bed.row * TILE_SIZE - 6;
+    const bw = 24;
+    const bh = 28;
+
+    ctx.save();
+
+    // 1. Bayangan kasur halus
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.fillRect(bx + 1, by + 2, bw, bh);
+
+    // 2. Headboard kayu elegan
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(bx, by, bw, 6);
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(bx + 1, by + 1, bw - 2, 4);
+
+    // 3. Matras kasur
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(bx + 1, by + 6, bw - 2, bh - 6);
+
+    // 4. Bantal empuk putih
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(bx + 4, by + 7, bw - 8, 7);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx + 4, by + 7, bw - 8, 7);
+
+    // 5. Selimut / Quilt Mewah
+    const isFemale = bed.dormType === 'female';
+    const quiltColor = isFemale ? '#f43f5e' : '#1e40af';
+    const foldColor = isFemale ? '#ffe4e6' : '#dbeafe';
+
+    ctx.fillStyle = quiltColor;
+    ctx.fillRect(bx + 2, by + 13, bw - 4, bh - 14);
+
+    // Lipatan selimut atas
+    ctx.fillStyle = foldColor;
+    ctx.fillRect(bx + 2, by + 13, bw - 4, 3);
+
+    // Pola jahitan selimut
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.fillRect(bx + 4, by + 18, bw - 8, 1);
+    ctx.fillRect(bx + 4, by + 22, bw - 8, 1);
+
+    // 6. Label Nama Kasur / Kamar jika labelsVisible aktif
+    if (this.labelsVisible) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(bx - 2, by + bh + 1, bw + 4, 10);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 7px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(bed.label, bx + bw / 2, by + bh + 8);
+    }
+
+    // 7. Cek apakah ada pegawai yang tidur di kasur ini
+    const emp = this.employeeData.find(e => e.id === bed.empId);
+    const isSleepingHere = emp && (emp.isSleeping || emp.state === 'sleeping' || (emp.subAction === 'in_dorm' && this.scheduleMode === 'NIGHT'));
+
+    if (isSleepingHere) {
+      // Gambar kepala pegawai di atas bantal
+      const charImg = this.assets[`char_${emp.charIdx || 0}`] || this.assets.char_0;
+      if (charImg) {
+        // Potongan kepala frame depan (16x14 px)
+        ctx.drawImage(charImg, 0, 0, 16, 14, bx + 4, by + 4, 16, 14);
+      }
+
+      // Animasi Z z z mengambang
+      const zPhase = (this.animTime * 1.6 + (emp.charIdx || 0)) % 3;
+      ctx.font = 'bold 7px monospace';
+      ctx.fillStyle = '#a5b4fc';
+      ctx.textAlign = 'left';
+      const zOff = zPhase * 3.5;
+      ctx.fillText('z', bx + 15 + zPhase * 2, by + 7 - zOff);
+      if (zPhase > 0.8) {
+        ctx.font = 'bold 8px monospace';
+        ctx.fillStyle = '#818cf8';
+        ctx.fillText('Z', bx + 18 + zPhase * 2, by + 4 - zOff);
+      }
+    }
+
+    ctx.restore();
+  }
+
   drawEmployee(ctx, emp) {
+    // Jika pegawai sedang tidur di kasur asrama, tubuhnya sudah dirender di dalam kasur oleh drawDormBed
+    if (emp.isSleeping && (emp.subAction === 'in_dorm' || emp.subAction === null) && emp.dormSpot && Math.abs(emp.x - (emp.dormSpot.col * TILE_SIZE + 8)) < 20) {
+      return;
+    }
+
     const charImg = this.assets[`char_${emp.charIdx || 0}`] || this.assets.char_0;
     if (!charImg) return;
 

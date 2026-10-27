@@ -449,6 +449,7 @@ export class TelegramBotService {
             name: reply.name,
             role: reply.role,
             speech: reply.speech,
+            userMessage: rawText,
             fromUser: fromUser?.first_name || 'Finance Lead'
           });
 
@@ -518,20 +519,35 @@ export class TelegramBotService {
    * Router Cerdas Pegawai Seventhsoft
    * Mendukung memori percakapan berlanjut (follow-up questions) & persona LLM dinamis
    */
-  async generateEmployeeResponse(text, fromUser, chatId) {
+  async generateEmployeeResponse(text, fromUser, chatId, forceEmpId = null) {
     const callerName = fromUser?.first_name || 'Pak Mikhael';
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = String(now.getMinutes()).padStart(2, '0');
     let timeState = 'jam kerja produktif';
-    if (currentHour >= 12 && currentHour < 13) {
+    const isNightTime = currentHour >= 21 || currentHour < 7;
+    const isAfterHours = currentHour >= 17;
+
+    if (isNightTime) {
+      timeState = 'jam malam istirahat/tidur di asrama karyawan Seventhsoft';
+    } else if (currentHour >= 12 && currentHour < 13) {
       timeState = 'jam istirahat makan siang (12:00 - 13:00)';
-    } else if (currentHour >= 17) {
-      timeState = 'jam pulang kantor / lembur santai';
+    } else if (isAfterHours) {
+      timeState = 'jam pulang kantor / santai di asrama / lembur';
     } else if (currentHour < 8) {
       timeState = 'pagi hari menjelang jam kantor';
     }
-    const timeContext = `Waktu kantor sekarang: pukul ${currentHour}:${currentMinute} WIB (${timeState}). Anda sedang mengobrol santai & profesional dengan ${callerName} (Finance Lead Seventhsoft).`;
+
+    const isTaskInstruction = /(tugas|kerjakan|tolong|cek|periksa|bantu|masuk kantor|ke kantor|lembur|bikin|buatkan|rekap|faktur|invoice|database|server|deploy|bug|fix|review)/i.test(text);
+
+    let dormContext = '';
+    if (isNightTime || isAfterHours) {
+      dormContext = `\nSTATUS ASRAMA: Anda saat ini berada di Kompleks Asrama Seventhsoft (asrama putri untuk staf wanita, asrama putra untuk staf pria). Jika ini jam malam/tidur dan Anda dihubungi atau diberi tugas:
+- Jika disapa/chat: Katakan Anda baru saja terbangun (hoam/kaget tapi ramah) dan menanyakan apa yang bisa dibantu.
+- Jika diberi tugas/instruksi (${isTaskInstruction}): Nyatakan dengan sigap bahwa Anda langsung bangun dari kasur asrama dan segera berangkat jalan kaki ke kantor sekarang juga untuk menyelesaikannya!`;
+    }
+
+    const timeContext = `Waktu sekarang: pukul ${currentHour}:${currentMinute} WIB (${timeState}). Anda sedang mengobrol dengan ${callerName} (Finance Lead Seventhsoft).${dormContext}`;
 
     // Roster 30 Pegawai Lengkap dengan Karakter Manusiawi yang Nyata
     const EMPLOYEES = [
@@ -810,8 +826,14 @@ export class TelegramBotService {
     // 1. Tentukan Siapa Pegawai yang Merespons
     let targetEmp = null;
 
+    if (forceEmpId) {
+      targetEmp = EMPLOYEES.find(e => e.id === forceEmpId);
+    }
+
     // Prioritas A: Disebut namanya secara eksplisit (e.g. "Doni", "Kevin", "Koko", "Mbak Nadia")
-    targetEmp = EMPLOYEES.find(e => e.nameTriggers && e.nameTriggers.some(rgx => rgx.test(text)));
+    if (!targetEmp) {
+      targetEmp = EMPLOYEES.find(e => e.nameTriggers && e.nameTriggers.some(rgx => rgx.test(text)));
+    }
 
     // Prioritas B: Topik spesifik yang jelas (e.g. "slip gaji", "kopi", "server", "piutang")
     if (!targetEmp) {
@@ -868,7 +890,14 @@ export class TelegramBotService {
 
     // 3. Fallback Cerdas Kontekstual jika LLM offline (Bukan satu kalimat template kaku!)
     let fallbackText = `Halo ${callerName}! Saya ${targetEmp.name} (${targetEmp.role}) dari Seventhsoft. Ada yang bisa saya bantu terkait tugas dan operasional hari ini?`;
-    if (targetEmp.id === 'staff-doni') {
+
+    if (isNightTime || isAfterHours) {
+      if (isTaskInstruction) {
+        fallbackText = `Hoaaam... 🥱 Siap Pak ${callerName}! Saya langsung bangun dari kasur asrama dan segera berangkat jalan ke meja kantor sekarang untuk selesaikan tugas ini! 🏃💨`;
+      } else {
+        fallbackText = `Hoaaam... 🥱 Eh ada pesan dari Pak ${callerName} malam-malam! Siap Pak, saya sudah bangun dari kasur asrama. Ada hal mendesak apa ya Pak?`;
+      }
+    } else if (targetEmp.id === 'staff-doni') {
       if (/gaji|payroll|rekap|pdf|slip|bulan\s*kemarin/i.test(text)) {
         fallbackText = `Siap Pak ${callerName}! Dokumen rekapitulasi gaji karyawan periode September 2026 (bulan kemarin) sudah saya siapkan dan lampirkan langsung di chat ini ya Pak. Seluruh rincian BPJS dan PPh 21 sudah tervalidasi rapi.`;
       } else {

@@ -1419,5 +1419,75 @@ body {
   margin-top: 4px;
 }
 
+/* ========================================================================== */
+/* DOSSIER INSPECTOR CHAT & ASSIGN TASK INPUT                                 */
+/* ========================================================================== */
+.insp-chat-box {
+  margin-top: 10px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.insp-chat-input-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.insp-chat-input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  background: #ffffff;
+  color: #0f172a;
+  transition: border-color 0.15s ease;
+}
+
+.insp-chat-input:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.btn-insp-send {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-insp-send:hover {
+  background: #0284c7;
+  transform: translateY(-1px);
+}
+
+.btn-insp-send:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.preset-pill.night {
+  background: #1e1b4b;
+  color: #c7d2fe;
+  border-color: #4338ca;
+}
+
+.preset-pill.night:hover, .preset-pill.night.active {
+  background: #4338ca;
+  color: #ffffff;
+  border-color: #6366f1;
+}
+
 
 

@@ -4,6 +4,7 @@ import { VirtualOfficePixel, VirtualOffice3D } from './office_pixel.js';
 let office3D = null;
 try {
   office3D = new VirtualOfficePixel('office-canvas-container', 'office-overlay-layer');
+  window.office3D = office3D;
 } catch (e) {
   console.error('Gagal menginisialisasi 2D Pixel Art Virtual Office:', e);
 }
@@ -113,8 +114,11 @@ function handleMessage(msg) {
 
 let broadcastTimer = null;
 function handleLiveEmployeeSpeech(data) {
-  // 1. Tampilkan di 3D Virtual Office
+  // 1. Tampilkan di Virtual Office Pixel & bangunkan jika ada instruksi tugas
   if (office3D) {
+    if (typeof office3D.wakeEmployeeToWork === 'function' && data.userMessage && /(tugas|kerjakan|tolong|cek|periksa|bantu|masuk kantor|ke kantor|lembur|bikin|buatkan|rekap|faktur|invoice|database|server|deploy|bug|fix|review)/i.test(data.userMessage)) {
+      office3D.wakeEmployeeToWork(data.empId, data.userMessage);
+    }
     office3D.triggerEmployeeSpeech(data.empId, data.name, data.speech);
   }
 
@@ -585,8 +589,23 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  let currentSelectedEmpId = null;
+
   window.addEventListener('employee_selected', (e) => {
     const emp = e.detail;
+    currentSelectedEmpId = emp.id;
+
+    // Reset status & placeholder chat
+    const chatInput = document.getElementById('insp-chat-msg');
+    const chatStatus = document.getElementById('insp-chat-status');
+    if (chatInput) {
+      chatInput.placeholder = `Tulis pesan / beri tugas ke ${emp.name}...`;
+    }
+    if (chatStatus) {
+      chatStatus.style.display = 'none';
+      chatStatus.textContent = '';
+    }
+
     // Highlight di party list
     document.querySelectorAll('.party-card').forEach(c => c.classList.remove('selected'));
     const partyCard = document.getElementById(`party-card-${emp.id}`);
@@ -618,14 +637,84 @@ window.addEventListener('DOMContentLoaded', () => {
     inspector.classList.add('open');
   });
 
-  document.getElementById('btn-insp-chat')?.addEventListener('click', () => {
-    const name = document.getElementById('insp-name')?.textContent || 'Pegawai';
-    alert(`💬 Anda menyapa ${name}: "Semangat kerjanya ya!" Pegawai tersenyum dan mengangguk ramah.`);
-  });
+  // Eksekutor Chat & Beri Tugas ke Pegawai Spesifik
+  const sendTaskBtn = document.getElementById('btn-insp-send-task');
+  const chatInput = document.getElementById('insp-chat-msg');
+  const chatStatus = document.getElementById('insp-chat-status');
 
-  document.getElementById('btn-insp-task')?.addEventListener('click', () => {
-    const name = document.getElementById('insp-name')?.textContent || 'Pegawai';
-    alert(`⚡ Tugas prioritas baru berhasil dikirimkan ke antrean kerja ${name}!`);
+  const executeSendTask = async () => {
+    if (!currentSelectedEmpId || !chatInput) return;
+    const msg = chatInput.value.trim();
+    if (!msg) {
+      if (chatStatus) {
+        chatStatus.style.display = 'block';
+        chatStatus.style.color = '#ef4444';
+        chatStatus.textContent = 'Silakan tulis pesan atau instruksi tugas!';
+      }
+      return;
+    }
+
+    if (sendTaskBtn) {
+      sendTaskBtn.disabled = true;
+      sendTaskBtn.textContent = 'Mengirim...';
+    }
+    if (chatStatus) {
+      chatStatus.style.display = 'block';
+      chatStatus.style.color = '#0284c7';
+      chatStatus.textContent = 'Menghubungi pegawai via server Seventhsoft...';
+    }
+
+    try {
+      const resp = await fetch('/api/chat-employee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empId: currentSelectedEmpId,
+          message: msg,
+          fromUser: 'Pak Mikhael'
+        })
+      });
+      const data = await resp.json();
+
+      if (data.success) {
+        chatInput.value = '';
+        if (chatStatus) {
+          chatStatus.style.color = '#10b981';
+          chatStatus.textContent = `Terkirim ke ${data.name}! Merespons: "${data.speech.slice(0, 45)}..."`;
+          setTimeout(() => {
+            if (chatStatus) chatStatus.style.display = 'none';
+          }, 6000);
+        }
+
+        // Jika pegawai sedang di asrama/tidur dan diberi instruksi tugas, bangunkan dan kirim ke meja kantor!
+        if (office3D && typeof office3D.wakeEmployeeToWork === 'function') {
+          office3D.wakeEmployeeToWork(data.empId, msg);
+        }
+      } else {
+        if (chatStatus) {
+          chatStatus.style.color = '#ef4444';
+          chatStatus.textContent = data.error || 'Gagal mengirim tugas.';
+        }
+      }
+    } catch (err) {
+      if (chatStatus) {
+        chatStatus.style.color = '#ef4444';
+        chatStatus.textContent = 'Koneksi error: ' + err.message;
+      }
+    } finally {
+      if (sendTaskBtn) {
+        sendTaskBtn.disabled = false;
+        sendTaskBtn.textContent = 'Kirim 🚀';
+      }
+    }
+  };
+
+  sendTaskBtn?.addEventListener('click', executeSendTask);
+  chatInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeSendTask();
+    }
   });
 
   // 6. INISIALISASI PARTY SIDEBAR (30 AGENTS LIST)

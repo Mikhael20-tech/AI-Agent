@@ -74,7 +74,8 @@
           <button class="preset-pill active" data-hour="9" data-min="30" title="Jam Kerja Pagi">☀️ Pagi</button>
           <button class="preset-pill" data-hour="12" data-min="15" title="Jam Istirahat Makan Siang">🍱 Makan (12:00-13:00)</button>
           <button class="preset-pill" data-hour="14" data-min="30" title="Jam Rawan Ngantuk Sore">😴 Sore/Ngopi</button>
-          <button class="preset-pill" data-hour="17" data-min="15" title="Jam Pulang Kantor">🌙 Pulang</button>
+          <button class="preset-pill" data-hour="17" data-min="15" title="Jam Pulang Kantor (17:00)">🌙 Pulang (17:00)</button>
+          <button class="preset-pill night" data-hour="22" data-min="00" title="Jam Malam & Tidur Asrama (22:00)">💤 Malam (22:00)</button>
           <button class="preset-pill live" id="btn-toggle-live-clock" title="Sinkron Waktu Riil">⏱️ Live</button>
         </div>
       </div>
@@ -146,6 +147,16 @@
         <div class="insp-section">
           <label>Tugas yang Sedang Dikerjakan:</label>
           <p id="insp-task" class="insp-task-text">Sedang memproses pekerjaan...</p>
+        </div>
+
+        <!-- FITUR INTERAKTIF: CHAT & BERI TUGAS KE PEGAWAI INI -->
+        <div class="insp-chat-box">
+          <label style="font-size:0.68rem; font-weight:700; color:#475569; display:block; text-transform:uppercase;">💬 Chat / Beri Tugas ke Pegawai:</label>
+          <div class="insp-chat-input-row">
+            <input type="text" id="insp-chat-msg" class="insp-chat-input" placeholder="Ketik pesan atau instruksi tugas..." />
+            <button id="btn-insp-send-task" class="btn-insp-send">Kirim 🚀</button>
+          </div>
+          <div id="insp-chat-status" style="font-size:0.68rem; color:#64748b; margin-top:5px; display:none;"></div>
         </div>
 
         <div class="insp-action-buttons">

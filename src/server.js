@@ -299,6 +299,45 @@ app.post('/api/simulate-telegram-action', async (req, res) => {
   }
 });
 
+// 9.1 Chat & Beri Tugas ke Pegawai Spesifik (Web UI / Simulator / Malam)
+app.post('/api/chat-employee', async (req, res) => {
+  try {
+    const { empId, message, fromUser } = req.body;
+    if (!message) {
+      return res.status(400).json({ success: false, error: 'Pesan / tugas tidak boleh kosong!' });
+    }
+
+    const reply = await telegramService.generateEmployeeResponse(
+      message,
+      { first_name: fromUser || 'Pak Mikhael' },
+      null,
+      empId || null
+    );
+
+    // Broadcast ke WebSocket Virtual Office
+    eventBus.emit('employee_speech', {
+      empId: reply.empId,
+      name: reply.name,
+      role: reply.role,
+      speech: reply.speech,
+      userMessage: message,
+      fromUser: fromUser || 'Pak Mikhael'
+    });
+
+    res.json({
+      success: true,
+      empId: reply.empId,
+      name: reply.name,
+      role: reply.role,
+      speech: reply.speech,
+      userMessage: message
+    });
+  } catch (err) {
+    console.error('Error /api/chat-employee:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 10. Uji Kirim Pesan Langsung ke Telegram Bot
 app.post('/api/test-telegram', async (req, res) => {
   try {
