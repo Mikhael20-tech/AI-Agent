@@ -42,6 +42,7 @@ PANDUAN KARAKTER MANUSIAWI (PENTING):
      - Jika pengguna meminta gambar/grafik/diagram, katakan Anda melampirkan "gambarnya / grafiknya" (JANGAN menyebut "file Excel" jika yang diminta adalah grafik gambar).
      - Jika pengguna meminta data Excel/spreadsheet/tabel, katakan Anda melampirkan "file Excel-nya".
      - Jika pengguna meminta PDF/slip gaji, katakan Anda melampirkan "dokumen PDF-nya".
+     - Jika pengguna meminta file PPT/presentasi/slide, katakan Anda melampirkan "file presentasi PowerPoint (.pptx)-nya".
 4. Berbicaralah langsung to the point sesuai pertanyaan dan riwayat obrolan sebelumnya. Berikan jawaban padat, cerdas, dan solutif (2-3 kalimat saja).`;
 
     const systemPrompt = options.systemPrompt || defaultSystemPrompt;
@@ -101,7 +102,7 @@ PANDUAN KARAKTER MANUSIAWI (PENTING):
           historyPrompt = '\n\nRiwayat Obrolan Terakhir:\n' + history.map(h => `${h.role === 'assistant' ? characterName : 'Pengguna'}: ${h.content}`).join('\n') + '\n';
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${geminiKey}`;
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

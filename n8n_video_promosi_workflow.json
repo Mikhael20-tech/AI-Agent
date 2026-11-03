@@ -1,0 +1,129 @@
+{
+  "name": "Seventhsoft AI Agent - Auto Video Edukasi & Bisnis",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "node-telegram-trigger",
+      "name": "Telegram Trigger (Perintah Video)",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.message.text }}",
+              "operation": "contains",
+              "value2": "video"
+            }
+          ]
+        }
+      },
+      "id": "node-if-video",
+      "name": "Cek Apakah Minta Video?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=YOUR_GEMINI_API_KEY",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Anda adalah Bagus Pratama, Head of Growth & Edukasi Bisnis PT Seventhsoft Teknologi Indonesia. Tugas Anda adalah merancang konsep konten video edukasi bisnis, manajemen operasional, dan pencegahan kecurangan (fraud) karyawan untuk Instagram Reels & TikTok.\\n\\nKeluarkan HANYA JSON murni tanpa markdown triple-backtick:\\n{\\n  \\\"judul\\\": \\\"Judul Video Edukatif\\\",\\n  \\\"hook\\\": \\\"Hook 3-5 detik pertama\\\",\\n  \\\"visual_prompt\\\": \\\"Prompt visual sinematik bahasa Inggris 8K detail\\\",\\n  \\\"voiceover\\\": \\\"Naskah narasi Indonesia 30-45 detik dengan 3 langkah solusi konkret\\\",\\n  \\\"caption_ig\\\": \\\"Draft caption Instagram lengkap dengan hashtag\\\"\\n}\\n\\nTopik pengguna: \" + $json.message.text\n        }\n      ]\n    }\n  ]\n}"
+      },
+      "id": "node-gemini-script",
+      "name": "Google Gemini (Otak Naskah & Edukasi)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nlet content = '';\nif (response.candidates && response.candidates[0]?.content?.parts?.[0]?.text) {\n  content = response.candidates[0].content.parts[0].text;\n} else if (response.choices && response.choices[0]?.message?.content) {\n  content = response.choices[0].message.content;\n}\n\n// Bersihkan markdown json jika ada\nconst cleaned = content.replace(/```json/g, '').replace(/```/g, '').trim();\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleaned);\n} catch(e) {\n  parsed = {\n    judul: 'Cara Deteksi Fraud Karyawan dalam 3 Menit',\n    hook: 'Pernah curiga stok barang sering minus tapi laporan kasir selalu pas?',\n    visual_prompt: 'Cinematic corporate audit office, high contrast dramatic lighting, business auditor reviewing anomaly detection graph on modern accounting ERP dashboard, ultra realistic 8k, camera zoom in',\n    voiceover: 'Jangan biarkan kebocoran kas merugikan bisnis Anda. Terapkan 3 langkah audit kilat: periksa void kasir, cocokkan mutasi bank otomatis, dan kunci akses otorisasi ganda.',\n    caption_ig: 'Bisnis sering bocor bukan karena omset sepi, tapi sistem kontrolnya longgar! Simak 3 langkah audit kilat untuk amankan profit Anda. Komen MAU untuk panduan lengkapnya! #tipsbisnis #auditkeuangan #seventhsoft'\n  };\n}\n\nreturn {\n  json: {\n    chat_id: $('Telegram Trigger (Perintah Video)').first().json.message.chat.id,\n    judul: parsed.judul,\n    hook: parsed.hook,\n    visual_prompt: parsed.visual_prompt,\n    voiceover: parsed.voiceover,\n    caption_ig: parsed.caption_ig\n  }\n};"
+      },
+      "id": "node-parse-prompt",
+      "name": "Parse Prompt & Naskah",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $json.chat_id }}\",\n  \"text\": \"🎬 <b>[BAGUS PRATAMA - AI CONTENT STRATEGIST]</b>\\n\\nPaket Produksi Video Edukasi Selesai Dirancang!\\n\\n📌 <b>Judul:</b> \" + $json.judul + \"\\n🎣 <b>Hook:</b> <i>\\\"\" + $json.hook + \"\\\"</i>\\n\\n🎙️ <b>Naskah Narasi Voiceover:</b>\\n\\\"\" + $json.voiceover + \"\\\"\\n\\n🎨 <b>Prompt Visual Sinematik (AI Video):</b>\\n<code>\" + $json.visual_prompt + \"</code>\\n\\n📱 <b>Draft Caption Instagram:</b>\\n\" + $json.caption_ig + \"\\n\\n💼 <i>Diproduksi otomatis oleh AI Agent Seventhsoft (Powered by Google Gemini Pro).</i>\",\n  \"parse_mode\": \"HTML\"\n}"
+      },
+      "id": "node-telegram-notify",
+      "name": "Kirim Paket Edukasi ke Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 200]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger (Perintah Video)": {
+      "main": [
+        [
+          {
+            "node": "Cek Apakah Minta Video?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cek Apakah Minta Video?": {
+      "main": [
+        [
+          {
+            "node": "Google Gemini (Otak Naskah & Edukasi)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini (Otak Naskah & Edukasi)": {
+      "main": [
+        [
+          {
+            "node": "Parse Prompt & Naskah",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Prompt & Naskah": {
+      "main": [
+        [
+          {
+            "node": "Kirim Paket Edukasi ke Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

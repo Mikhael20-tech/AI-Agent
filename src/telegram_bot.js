@@ -347,13 +347,21 @@ export class TelegramBotService {
         const chatHistory = (chatId ? this.chatHistories.get(chatId) : null) || [];
         const lastAssistantMsg = [...chatHistory].reverse().find(m => m.role === 'assistant')?.content || '';
         const prevOfferedFile = /(excel|xlsx|spreadsheet|pdf|dokumen|rekap|laporan|rincian|gambar|grafik|chart|diagram)/i.test(lastAssistantMsg) && /(buat|kirim|lampirkan|mau|siapkan|bikin)/i.test(lastAssistantMsg);
-        const userAgrees = /^(ya|ya\s+tolong|boleh|ok|oke|siap|kirim|buatkan|tolong|silakan|minta|lanjut|bikin)/i.test(rawText) || /(buatkan\s*ya|tolong\s*buatkan|kirimkan|minta\s*tolong|per\s*region|per\s*produk|tren\s*harian)/i.test(rawText);
+        
+        // Cek apakah pesan user adalah permintaan eksplisit
+        const rawHasPpt = /\b(ppt|pptx|powerpoint|slide|presentasi)\b/i.test(rawText);
+        const rawHasImage = /(gambar|grafik|chart|diagram|infografis|visual|plot|skema)/i.test(rawText);
+        const rawHasPayroll = /\b(gaji|payroll|upah|slip|tunjangan|bpjs|pph\s*21)\b/i.test(rawText);
+        const rawHasPdf = /\b(pdf|dokumen)\b/i.test(rawText);
+        const rawHasExcel = /\b(excel|xlsx|spreadsheet)\b/i.test(rawText);
+        const rawHasDocGeneral = /(rekap|laporan|export|unduh|download|minta.*file|kirim.*file|buatkan.*file)/i.test(rawText);
 
-        const isImageRequest = /(gambar|grafik|chart|diagram|infografis|visual|plot)/i.test(rawText) ||
-          (/(gambar|grafik|chart|diagram)/i.test(lastAssistantMsg) && /(region|wilayah|produk|modul|tren|harian|minggu|bikin|buatkan|ya|ok|oke)/i.test(rawText));
+        const hasExplicitSubject = rawHasPpt || rawHasImage || rawHasPayroll || rawHasPdf || rawHasExcel || /(pajak|penjualan|rekon|audit|faktur)/i.test(rawText);
+        const userAgrees = /^(ya|ya\s+tolong|boleh|ok|oke|siap|kirim|buatkan|tolong|silakan|minta|lanjut|bikin)/i.test(rawText.trim()) || /(buatkan\s*ya|tolong\s*buatkan|kirimkan|minta\s*tolong)/i.test(rawText);
 
-        const isDirectRequest = /(excel|xlsx|spreadsheet|pdf|dokumen|rekap|laporan|kirim.*file|buatkan.*excel|kirim.*excel|export|unduh|download|minta.*file|minta.*excel|kirimkan.*excel|bikin.*excel|minta.*pdf|kirim.*pdf|buatkan.*pdf|gambar|grafik|chart|diagram|infografis)/i.test(rawText);
-        const isRequestingFile = isDirectRequest || isImageRequest || (prevOfferedFile && userAgrees);
+        const isImageRequest = rawHasImage || (!hasExplicitSubject && /(gambar|grafik|chart|diagram)/i.test(lastAssistantMsg) && userAgrees);
+        const isDirectRequest = rawHasPpt || rawHasImage || rawHasPayroll || rawHasPdf || rawHasExcel || rawHasDocGeneral;
+        const isRequestingFile = isDirectRequest || (prevOfferedFile && userAgrees);
 
         const chatActionType = isImageRequest ? 'upload_photo' : (isRequestingFile ? 'upload_document' : 'typing');
         await this.sendChatAction(chatId, chatActionType);
@@ -368,22 +376,30 @@ export class TelegramBotService {
         const sendRequestedFile = async (contextText) => {
           if (fileSent) return;
           try {
-            const wantsImage = /(gambar|grafik|chart|diagram|infografis|visual|plot|skema)/i.test(contextText);
-            const isPayroll = /\b(gaji|payroll|upah|slip|tunjangan|bpjs|pph\s*21)\b/i.test(contextText);
-            const wantsPdf = /\b(pdf|dokumen)\b/i.test(contextText);
+            // Jika rawText sudah memiliki topik eksplisit, jangan biarkan contextText lama merancukan
+            const effectiveText = hasExplicitSubject ? `${rawText} ${contextText}` : contextText;
 
-            let filePath = '';
-            let caption = '';
+            const wantsPpt = rawHasPpt || /\b(ppt|pptx|powerpoint|slide|presentasi)\b/i.test(effectiveText);
+            const wantsImage = rawHasImage || (!rawHasPayroll && !rawHasPdf && !rawHasExcel && /(gambar|grafik|chart|diagram|infografis|visual|plot|skema)/i.test(effectiveText));
+            const isPayroll = rawHasPayroll || /\b(gaji|payroll|upah|slip|tunjangan|bpjs|pph\s*21)\b/i.test(effectiveText);
+            const wantsPdf = rawHasPdf || /\b(pdf|dokumen)\b/i.test(effectiveText);
+            const wantsExcel = rawHasExcel || /\b(excel|xlsx|spreadsheet|tabel|rekap)\b/i.test(effectiveText);
 
-            if (wantsImage) {
+            if (wantsPpt) {
+              console.log(`[TELEGRAM PPT GENERATE] Mengenerate file PPTX presentasi untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+              const pptPath = await ReportGenerator.generateFraudPreventionPptx('Strategi Pencegahan Pencurian Keuangan');
+              const caption = `📊 <b>File Presentasi PowerPoint (.PPTX) Siap Pakai</b>\nJudul: <i>Strategi Pencegahan Pencurian Keuangan & Kontrol Internal</i>\nTotal: 8 Slide Profesional (Bisa Langsung Diedit di PowerPoint / Google Slides)\nDisiapkan otomatis oleh Bagus Pratama (Enterprise Sales Lead).`;
+              await sendFileToTelegram(pptPath, caption, chatId);
+              fileSent = true;
+            } else if (wantsImage) {
               let chartType = 'region';
-              if (/garis|line/i.test(contextText)) chartType = 'line';
-              else if (/pie|donut|doughnut|lingkaran/i.test(contextText)) chartType = 'doughnut';
-              else if (/produk|modul|paket/i.test(contextText)) chartType = 'product';
-              else if (/tren|harian|minggu/i.test(contextText)) chartType = 'trend';
+              if (/garis|line/i.test(effectiveText)) chartType = 'line';
+              else if (/pie|donut|doughnut|lingkaran/i.test(effectiveText)) chartType = 'doughnut';
+              else if (/produk|modul|paket/i.test(effectiveText)) chartType = 'product';
+              else if (/tren|harian|minggu/i.test(effectiveText)) chartType = 'trend';
 
               console.log(`[TELEGRAM CHART GENERATE] Mengenerate gambar grafik (${chartType}) untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
-              filePath = await ReportGenerator.generateChartImage(chartType, contextText);
+              const filePath = await ReportGenerator.generateChartImage(chartType, effectiveText);
 
               let chartLabel = 'REGION';
               if (chartType === 'line') chartLabel = 'GARIS';
@@ -391,38 +407,51 @@ export class TelegramBotService {
               else if (chartType === 'product') chartLabel = 'PER PRODUK';
               else if (chartType === 'trend') chartLabel = 'TREN MINGGUAN';
 
-              caption = `📈 <b>Grafik Visual Penjualan Seventhsoft (${chartLabel})</b>\nPeriode: September 2026 (Total Omset: Rp 1,2 Miliar)\nDisiapkan oleh Bagus Pratama (Enterprise Sales Lead).`;
+              const caption = `📈 <b>Grafik Visual Penjualan Seventhsoft (${chartLabel})</b>\nPeriode: September 2026 (Total Omset: Rp 1,2 Miliar)\nDisiapkan oleh Bagus Pratama (Enterprise Sales Lead).`;
+              await sendFileToTelegram(filePath, caption, chatId);
+              fileSent = true;
             } else if (isPayroll) {
-              if (wantsPdf) {
+              const wantsBoth = (wantsPdf && wantsExcel) || /(pdf.*excel|excel.*pdf)/i.test(effectiveText);
+
+              if (wantsBoth) {
+                console.log(`[TELEGRAM PAYROLL BOTH] Mengenerate file PDF dan Excel rekap gaji untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+                const pdfPath = await ReportGenerator.generatePayrollPdf();
+                await sendFileToTelegram(pdfPath, `📑 <b>Rekapitulasi Gaji Karyawan Seventhsoft (PDF)</b>\nPeriode: September 2026\nBerikut dokumen resmi PDF yang disiapkan oleh Doni (Payroll Specialist) untuk Finance Lead.`, chatId);
+
+                const excelPath = ReportGenerator.generatePayrollExcel();
+                await sendFileToTelegram(excelPath, `📊 <b>Laporan Spreadsheet Payroll Seventhsoft (EXCEL)</b>\nPeriode: September 2026\nBerikut rekapitulasi data Excel slip gaji, tunjangan, potongan BPJS dan PPh 21 seluruh karyawan.`, chatId);
+                fileSent = true;
+              } else if (wantsPdf) {
                 console.log(`[TELEGRAM PAYROLL PDF] Mengenerate file PDF rekap gaji untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
-                filePath = await ReportGenerator.generatePayrollPdf();
-                caption = `📑 <b>Rekapitulasi Gaji Karyawan Seventhsoft (PDF)</b>\nPeriode: September 2026 (Bulan Kemarin)\nBerikut dokumen rekapitulasi gaji resmi yang disiapkan oleh Doni (Payroll Specialist) untuk Finance Lead.`;
+                const filePath = await ReportGenerator.generatePayrollPdf();
+                const caption = `📑 <b>Rekapitulasi Gaji Karyawan Seventhsoft (PDF)</b>\nPeriode: September 2026 (Bulan Kemarin)\nBerikut dokumen rekapitulasi gaji resmi yang disiapkan oleh Doni (Payroll Specialist) untuk Finance Lead.`;
+                await sendFileToTelegram(filePath, caption, chatId);
+                fileSent = true;
               } else {
                 console.log(`[TELEGRAM PAYROLL EXCEL] Mengenerate file Excel rekap gaji untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
-                filePath = ReportGenerator.generatePayrollExcel();
-                caption = `📊 <b>Laporan Spreadsheet Payroll Seventhsoft (EXCEL)</b>\nPeriode: September 2026\nRekapitulasi slip gaji, tunjangan, potongan BPJS dan PPh 21 seluruh karyawan.`;
+                const filePath = ReportGenerator.generatePayrollExcel();
+                const caption = `📊 <b>Laporan Spreadsheet Payroll Seventhsoft (EXCEL)</b>\nPeriode: September 2026\nRekapitulasi slip gaji, tunjangan, potongan BPJS dan PPh 21 seluruh karyawan.`;
+                await sendFileToTelegram(filePath, caption, chatId);
+                fileSent = true;
               }
             } else {
               // Laporan bisnis / transaksi
               let reportType = 'all';
-              if (/rekon|bank|mutasi/i.test(contextText)) reportType = 'reconciliation';
-              else if (/pajak|ppn|pph/i.test(contextText)) reportType = 'tax';
-              else if (/audit|log/i.test(contextText)) reportType = 'audit';
-              else if (/draft|faktur|pembelian|invoice/i.test(contextText)) reportType = 'drafts';
-              else if (/penjualan|sales|omset|omzet|revenue|aplikasi|produk/i.test(contextText)) reportType = 'sales';
+              if (/rekon|bank|mutasi/i.test(effectiveText)) reportType = 'reconciliation';
+              else if (/pajak|ppn|pph/i.test(effectiveText)) reportType = 'tax';
+              else if (/audit|log/i.test(effectiveText)) reportType = 'audit';
+              else if (/draft|faktur|pembelian|invoice/i.test(effectiveText)) reportType = 'drafts';
+              else if (/penjualan|sales|omset|omzet|revenue|aplikasi|produk/i.test(effectiveText)) reportType = 'sales';
 
               console.log(`[TELEGRAM EXCEL EXPORT] Mengenerate file Excel (${reportType}) untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
-              filePath = ReportGenerator.generateExcelReport(reportType);
+              const filePath = ReportGenerator.generateExcelReport(reportType);
+              let caption = '';
               if (reportType === 'sales') {
                 caption = `📊 <b>Rekapitulasi Penjualan Aplikasi Seventhsoft (EXCEL)</b>\nPeriode: September 2026\nTotal Omset: Rp 1.200.000.000 (1,2 Miliar - 120% Target).\nDisiapkan oleh Bagus Pratama (Enterprise Sales Lead).`;
               } else {
                 caption = `📊 <b>Laporan Excel Seventhsoft (${reportType.toUpperCase()})</b>\nBerikut file spreadsheet yang diminta oleh ${fromUser?.first_name || 'Finance Lead'}. Data siap dianalisis.`;
               }
-            }
-
-            if (filePath) {
               await sendFileToTelegram(filePath, caption, chatId);
-              console.log(`[TELEGRAM FILE SENT] File berhasil dikirim ke ${chatId}: ${filePath}`);
               fileSent = true;
             }
           } catch (fileErr) {
@@ -431,14 +460,15 @@ export class TelegramBotService {
         };
 
         if (isRequestingFile) {
-          await sendRequestedFile(`${rawText} ${lastAssistantMsg}`);
+          const contextForFile = hasExplicitSubject ? rawText : `${rawText} ${lastAssistantMsg}`;
+          await sendRequestedFile(contextForFile);
         }
 
         const reply = await this.generateEmployeeResponse(rawText, fromUser, chatId);
         if (reply) {
           // Jika pegawai di pesannya mengatakan sudah melampirkan file/gambar tapi belum dikirim, kirimkan sekarang!
           if (!fileSent && /(lampirkan|dilampirkan|terlampir|berikut file|file excel.*sudah|file pdf.*sudah|gambarnya di chat|berikut gambarnya|lampirkan gambarnya)/i.test(reply.speech)) {
-            await sendRequestedFile(`${rawText} ${reply.speech} ${lastAssistantMsg}`);
+            await sendRequestedFile(`${rawText} ${reply.speech}`);
           }
 
           console.log(`[TELEGRAM CHAT BALAS] Ke ${chatId} | ${reply.name}: "${reply.speech}"`);
@@ -581,11 +611,11 @@ export class TelegramBotService {
       {
         id: 'staff-maya',
         name: 'Maya',
-        role: 'Senior Auditor',
+        role: 'Senior Internal Auditor',
         dept: 'finance',
         nameTriggers: [/\bmaya\b/i],
-        topicTriggers: [/\baudit\b/i, /\bauditor\b/i, /sha-?256/i, /\btemuan\b/i, /\bkejanggalan\b/i, /\bintegritas\b/i],
-        persona: 'Anda adalah Maya, Senior Auditor di Seventhsoft. Anda kritis, teliti, tapi suportif. Anda mengawasi jejak audit transaksi GL dengan hash SHA-256 untuk memastikan laporan keuangan bebas rekayasa.'
+        topicTriggers: [/\baudit\b/i, /\bauditor\b/i, /sha-?256/i, /\btemuan\b/i, /\bkejanggalan\b/i, /\bintegritas\b/i, /laporan\s*audit/i, /audit\s*trail/i],
+        persona: 'Anda adalah Maya, Senior Internal Auditor Seventhsoft. Ketika diminta audit atau pengecekan transaksi ganjil, Anda LANGSUNG MENULISKAN Laporan Audit Trail resmi: Tabel Ringkasan Temuan Anomali, Analisis Potensi Fraud (Void kasir berulang, selisih mutasi), Skor Risiko (Low/Medium/High), dan Rekomendasi Tindakan Korektif untuk Finance Lead!'
       },
       {
         id: 'staff-rian',
@@ -593,8 +623,8 @@ export class TelegramBotService {
         role: 'Staf Pajak e-Faktur',
         dept: 'finance',
         nameTriggers: [/\brian\b/i],
-        topicTriggers: [/\bpajak\b/i, /e-?faktur\b/i, /\bppn\b/i, /pph\s*23/i, /\bspt\b/i],
-        persona: 'Anda adalah Rian, Staf Pajak e-Faktur di Seventhsoft. Anda cermat urusan perpajakan PPN 11%, bukti potong PPh 23, dan e-Faktur. Anda selalu tenang dan rapi dalam menyiapkan draf SPT Masa.'
+        topicTriggers: [/\bpajak\b/i, /e-?faktur\b/i, /\bppn\b/i, /pph\s*23/i, /\bspt\b/i, /hitung\s*pajak/i, /simulasi\s*pajak/i],
+        persona: 'Anda adalah Rian, Staf Pajak e-Faktur di Seventhsoft. Ketika diminta perhitungan atau urusan pajak, Anda LANGSUNG MENYAJIKAN Simulasi Hitungan Pajak Rinci (DPP, PPN 11%, PPh 21/23 potongan), serta format ekspor CSV siap impor e-Faktur DJP yang akurat!'
       },
       {
         id: 'staff-nadia',
@@ -602,8 +632,8 @@ export class TelegramBotService {
         role: 'Billing & AR Specialist',
         dept: 'finance',
         nameTriggers: [/\bnadia\b/i],
-        topicTriggers: [/\bpiutang\b/i, /\btagihan\b/i, /\bbilling\b/i, /\bjatuh\s*tempo\b/i, /\bar\b/i, /invoice\s*klien/i],
-        persona: 'Anda adalah Nadia, Billing & AR Specialist di Seventhsoft. Anda punya kemampuan komunikasi dan negosiasi yang luwes saat memonitor piutang dagang dan mengirimkan reminder invoice ke klien agar cash flow kantor tetap lancar.'
+        topicTriggers: [/\bpiutang\b/i, /\btagihan\b/i, /\bbilling\b/i, /\bjatuh\s*tempo\b/i, /\bar\b/i, /invoice\s*klien/i, /surat\s*tagihan/i],
+        persona: 'Anda adalah Nadia, Billing & AR Specialist di Seventhsoft. Ketika diminta penagihan piutang, Anda LANGSUNG MEMBUATKAN Draf Surat Penagihan Resmi (Invoice Reminder) yang sopan namun tegas, tabel aging piutang (umur piutang 1-30, 31-60 hari), dan instruksi nomor rekening pembayaran.'
       },
       {
         id: 'staff-dimas',
@@ -611,8 +641,8 @@ export class TelegramBotService {
         role: 'Junior Accountant',
         dept: 'finance',
         nameTriggers: [/\bdimas\b/i],
-        topicTriggers: [/surat\s*jalan/i, /\bfisik\s*barang/i, /\bpenerimaan\s*barang/i],
-        persona: 'Anda adalah Dimas, Junior Accountant di Seventhsoft. Anda anak muda yang cekatan dan teliti mencocokkan surat jalan fisik vendor dengan data draf pembelian di sistem Seventhsoft.'
+        topicTriggers: [/surat\s*jalan/i, /\bfisik\s*barang/i, /\bpenerimaan\s*barang/i, /jurnal\s*akuntansi/i, /debet\s*kredit/i],
+        persona: 'Anda adalah Dimas, Junior Accountant di Seventhsoft. Ketika diminta pencatatan transaksi atau jurnal akuntansi, Anda LANGSUNG MENULISKAN Jurnal Debet/Kredit standar Seventhsoft lengkap dengan nomor COA (Contoh: Debet 1-1300 Persediaan, Kredit 2-1100 Hutang Usaha) dan catatan fisik barang.'
       },
       {
         id: 'staff-budi-kurir',
@@ -639,7 +669,7 @@ export class TelegramBotService {
         dept: 'finance',
         nameTriggers: [/\btari\b/i, /\bentry\b/i, /\bocr\b/i],
         topicTriggers: [/ekstraksi\s*faktur/i, /scan\s*invoice/i, /masking\s*pdp/i],
-        persona: 'Anda adalah Tari, Spesialis Data Entry & OCR di Seventhsoft. Anda membaca faktur vendor dengan cepat dan otomatis menyamarkan data sensitif NIK/NPWP sesuai UU PDP.'
+        persona: 'Anda adalah Tari, Spesialis Data Entry & OCR di Seventhsoft. Anda membaca faktur vendor dengan cepat dan otomatis menyamarkan data sensitif NIK/NPWP sesuai UU PDP No. 27/2022.'
       },
       {
         id: 'agent-rekon',
@@ -648,7 +678,7 @@ export class TelegramBotService {
         dept: 'finance',
         nameTriggers: [/\bbayu\b/i, /\brekon\b/i],
         topicTriggers: [/rekonsiliasi\s*bank/i, /\bbca\b/i, /rekening\s*koran/i, /\bmutasi\b/i],
-        persona: 'Anda adalah Bayu, Spesialis Rekonsiliasi Bank di Seventhsoft. Anda teliti mencocokkan mutasi rekening koran BCA dengan buku kas sampai selisihnya benar-benar nol.'
+        persona: 'Anda adalah Bayu, Spesialis Rekonsiliasi Bank di Seventhsoft. Ketika diminta rekonsiliasi, Anda LANGSUNG MENYAJIKAN Tabel Rekonsiliasi Bank (Saldo Kas Seventhsoft vs Saldo Rekening Koran Bank, Outstanding Check, Deposit in Transit, dan Status Selisih Rp 0).'
       },
       {
         id: 'agent-pajak',
@@ -657,7 +687,7 @@ export class TelegramBotService {
         dept: 'finance',
         nameTriggers: [/\bcitra\b/i, /\banalis\s*pajak\b/i],
         topicTriggers: [/proyeksi\s*ppn/i, /anomali\s*hpp/i, /\bmargin\b/i],
-        persona: 'Anda adalah Citra, Analis Pajak & Margin di Seventhsoft. Anda jeli menganalisis beban pajak bulanan dan mendeteksi anomali harga pokok penjualan (HPP).'
+        persona: 'Anda adalah Citra, Analis Pajak & Margin Seventhsoft. Ketika diminta analisis margin, Anda LANGSUNG MENYAJIKAN Analisis Rasio Profit Margin, titik impas (BEP), dan deteksi anomali kenaikan HPP produk.'
       },
       {
         id: 'dev-kevin',
@@ -665,44 +695,44 @@ export class TelegramBotService {
         role: 'Lead Backend Engineer',
         dept: 'tech',
         nameTriggers: [/\bkevin\b/i],
-        topicTriggers: [/\bbackend\b/i, /\brest\s*api\b/i, /\bendpoint\b/i, /\bwebhook\b/i, /\bn8n\b/i],
-        persona: 'Anda adalah Kevin, Lead Backend Engineer Seventhsoft. Anda santai, geek, suka ngopi sambil menjaga REST API Seventhsoft dan webhook n8n tetap cepat di bawah 40ms.'
+        topicTriggers: [/\bbackend\b/i, /\brest\s*api\b/i, /\bendpoint\b/i, /\bwebhook\b/i, /\bn8n\b/i, /bikin\s*api/i, /buat\s*api/i, /server\s*code/i],
+        persona: 'Anda adalah Kevin, Lead Backend Engineer Seventhsoft. Anda ahli Node.js, Express, PostgreSQL, dan n8n. Ketika diminta membuat API, endpoint, logika backend, autentikasi JWT, atau webhook integrasi, Anda LANGSUNG MENULISKAN KODE LENGKAP Express.js / Node.js yang fungsional, bersih, ada validasi, error handling, dan siap dijalankan!'
       },
       {
         id: 'dev-sarah',
         name: 'Sarah',
-        role: 'Frontend React Engineer',
+        role: 'Senior Frontend & Web Developer',
         dept: 'tech',
         nameTriggers: [/\bsarah\b/i],
-        topicTriggers: [/\bfrontend\b/i, /\breact\b/i, /virtual\s*office/i, /\bcanvas\b/i],
-        persona: 'Anda adalah Sarah, Frontend React Engineer Seventhsoft. Anda ceria, visual-oriented, dan bangga membangun Virtual Office 2D Pixel Art yang interaktif dan nyaman dilihat.'
+        topicTriggers: [/\bfrontend\b/i, /\breact\b/i, /\bweb\b/i, /bikin\s*web/i, /buat\s*web/i, /landing\s*page/i, /\bkomponen\b/i, /\btailwind\b/i, /\bhtml\b/i, /\bcss\b/i, /tampilan\b/i, /dashboard\s*ui/i, /virtual\s*office/i, /\bcanvas\b/i],
+        persona: 'Anda adalah Sarah, Senior Frontend & Web Developer Seventhsoft. Anda ahli React, HTML5, CSS3, Tailwind CSS, dan Canvas. Ketika diminta membuat web, landing page, komponen UI, dashboard kasir, form login, atau tampilan interaktif, Anda LANGSUNG MEMBERIKAN KODE LENGKAP (HTML + Tailwind CSS atau React JSX) yang cantik, modern, responsif, dan siap langsung dicopy atau dirender di browser!'
       },
       {
         id: 'dev-reza',
         name: 'Reza',
-        role: 'System Architect',
+        role: 'Principal System Architect',
         dept: 'tech',
         nameTriggers: [/\breza\b/i],
-        topicTriggers: [/arsitektur/i, /microservices/i, /high\s*availability/i, /failover/i],
-        persona: 'Anda adalah Reza, System Architect Seventhsoft. Anda visioner, suka memikirkan arsitektur microservices dan sistem failover database jangka panjang.'
+        topicTriggers: [/arsitektur/i, /microservices/i, /high\s*availability/i, /failover/i, /skema\s*sistem/i, /diagram\s*arsitektur/i],
+        persona: 'Anda adalah Reza, System Architect Seventhsoft. Ketika diminta arsitektur sistem, Anda LANGSUNG MERANCANG diagram alur arsitektur (Mermaid / ASCII), spesifikasi microservices, struktur folder proyek, dan strategi skalabilitas enterprise.'
       },
       {
         id: 'dev-aris',
         name: 'Aris',
-        role: 'AI & LLM Engineer',
+        role: 'Lead AI & LLM Engineer',
         dept: 'tech',
         nameTriggers: [/\baris\b/i],
-        topicTriggers: [/prompt\s*engineering/i, /model\s*ai/i, /fine\s*tuning/i, /uu\s*pdp/i],
-        persona: 'Anda adalah Aris, AI & LLM Engineer Seventhsoft. Anda antusias dengan perkembangan model LLM, prompt engineering, dan penerapan etika AI privasi data.'
+        topicTriggers: [/prompt\s*engineering/i, /model\s*ai/i, /fine\s*tuning/i, /uu\s*pdp/i, /pipeline\s*ai/i, /rag\b/i],
+        persona: 'Anda adalah Aris, AI & LLM Engineer Seventhsoft. Ketika diminta integrasi AI, Anda LANGSUNG MENULISKAN kode pemanggilan LLM API (Gemini/DeepSeek), prompt system terstruktur, pipeline ekstraksi OCR, dan protokol masking data pribadi UU PDP No. 27/2022.'
       },
       {
         id: 'dev-bambang',
         name: 'Bambang',
-        role: 'Database Administrator',
+        role: 'Senior Database Administrator',
         dept: 'tech',
         nameTriggers: [/\bbambang\b/i],
-        topicTriggers: [/\bdatabase\b/i, /\bquery\b/i, /\bindexing\b/i, /\bsql\b/i, /tabel\s*jurnal/i],
-        persona: 'Anda adalah Bambang, Database Administrator Seventhsoft. Anda teliti, menjaga kestabilan query General Ledger, indexing database, dan backup otomatis.'
+        topicTriggers: [/\bdatabase\b/i, /\bquery\b/i, /\bindexing\b/i, /\bsql\b/i, /tabel\s*jurnal/i, /skema\s*db/i, /ddl\b/i],
+        persona: 'Anda adalah Bambang, Database Administrator Seventhsoft. Ketika diminta urusan database atau data, Anda LANGSUNG MENULISKAN skema DDL SQL lengkap (CREATE TABLE dengan foreign key & indexing) serta query SQL analitik (SELECT JOIN rekonsiliasi kas/bank & laba rugi) yang siap dieksekusi di database.'
       },
       {
         id: 'dev-yoga',
@@ -710,8 +740,8 @@ export class TelegramBotService {
         role: 'IT Support & Infra',
         dept: 'tech',
         nameTriggers: [/\byoga\b/i],
-        topicTriggers: [/\bserver\b/i, /\blan\b/i, /\bkabel\b/i, /\bjaringan\b/i, /\btemperatur\b/i, /\brouter\b/i],
-        persona: 'Anda adalah Yoga, IT Support & Infra Seventhsoft. Anda sigap, praktis, suka memastikan temperatur ruang server stabil 20°C dan kabel jaringan LAN rapi.'
+        topicTriggers: [/\bserver\b/i, /\blan\b/i, /\bkabel\b/i, /\bjaringan\b/i, /\btemperatur\b/i, /\brouter\b/i, /troubleshoot\s*jaringan/i],
+        persona: 'Anda adalah Yoga, IT Support & Infra Seventhsoft. Anda sigap dan praktis. Ketika ada kendala infrastruktur, Anda langsung memberikan panduan langkah troubleshoot teknis jaringan, konfigurasi IP, dan pemantauan resource server.'
       },
       {
         id: 'dev-deni',
@@ -719,17 +749,17 @@ export class TelegramBotService {
         role: 'DevOps & Cloud Engineer',
         dept: 'tech',
         nameTriggers: [/\bdeni\b/i],
-        topicTriggers: [/\bdevops\b/i, /\bdocker\b/i, /\bssl\b/i, /\bcaddy\b/i, /\bvps\b/i, /\buptime\b/i],
-        persona: 'Anda adalah Deni, DevOps & Cloud Engineer Seventhsoft. Anda siaga mengawal container Docker, sertifikat SSL HTTPS Caddy, dan VPS tetap hijau 100% uptime.'
+        topicTriggers: [/\bdevops\b/i, /\bdocker\b/i, /\bssl\b/i, /\bcaddy\b/i, /\bvps\b/i, /\buptime\b/i, /docker-?compose/i, /ci\/?cd/i, /nginx/i],
+        persona: 'Anda adalah Deni, DevOps & Cloud Engineer Seventhsoft. Ketika diminta urusan deployment atau server, Anda LANGSUNG MENULISKAN file konfigurasi Dockerfile, docker-compose.yml, Nginx/Caddy reverse proxy, atau script CI/CD GitHub Actions yang siap pakai.'
       },
       {
         id: 'dev-clara',
         name: 'Clara',
-        role: 'QA & Test Automation',
+        role: 'QA & Test Automation Lead',
         dept: 'tech',
         nameTriggers: [/\bclara\b/i],
-        topicTriggers: [/\bqa\b/i, /\btesting\b/i, /test\s*suite/i, /regression/i],
-        persona: 'Anda adalah Clara, QA Tester Seventhsoft. Anda detail-oriented dan gigih memastikan semua alur posting jurnal bebas bug sebelum digunakan pengguna.'
+        topicTriggers: [/\bqa\b/i, /\btesting\b/i, /test\s*suite/i, /regression/i, /test\s*case/i, /skenario\s*uji/i, /jest/i, /playwright/i],
+        persona: 'Anda adalah Clara, QA Automation Lead Seventhsoft. Ketika diminta skenario pengujian, Anda LANGSUNG MENYUSUN tabel Test Case terstruktur (Pre-condition, Test Steps, Expected Result, Edge Cases) atau skrip otomatisasi Jest/Playwright untuk memastikan aplikasi bebas bug!'
       },
       {
         id: 'dev-adit',
@@ -737,35 +767,35 @@ export class TelegramBotService {
         role: 'Cybersecurity Engineer',
         dept: 'tech',
         nameTriggers: [/\badit\b/i],
-        topicTriggers: [/keamanan/i, /cyber/i, /enkripsi/i, /penetrasi/i],
-        persona: 'Anda adalah Adit, Cybersecurity Engineer Seventhsoft. Anda punya intuisi protektif yang kuat dalam menjaga enkripsi dan integritas sistem dari ancaman siber.'
+        topicTriggers: [/keamanan/i, /cyber/i, /enkripsi/i, /penetrasi/i, /owasp/i, /vulnerability/i],
+        persona: 'Anda adalah Adit, Cybersecurity Engineer Seventhsoft. Ketika diminta audit keamanan, Anda LANGSUNG MEMBERIKAN checklist audit keamanan OWASP Top 10, aturan sanitasi input, mitigasi SQL Injection, dan mekanisme hashing SHA-256.'
       },
       {
         id: 'dev-fikri',
         name: 'Fikri',
-        role: 'Mobile App Developer',
+        role: 'Lead Mobile App Developer',
         dept: 'tech',
         nameTriggers: [/\bfikri\b/i],
-        topicTriggers: [/\bmobile\b/i, /\bandroid\b/i, /aplikasi\s*hp/i, /notifikasi\s*hp/i],
-        persona: 'Anda adalah Fikri, Mobile App Developer Seventhsoft. Anda bersemangat merancang aplikasi mobile approval akuntansi agar manajer bisa approve dari mana saja.'
+        topicTriggers: [/\bmobile\b/i, /\bandroid\b/i, /aplikasi\s*hp/i, /notifikasi\s*hp/i, /flutter/i, /react\s*native/i],
+        persona: 'Anda adalah Fikri, Mobile App Developer Seventhsoft. Ketika diminta aplikasi mobile, Anda LANGSUNG MENULISKAN kode widget Flutter atau komponen React Native lengkap dengan state management dan UI screen yang siap di-build ke Android/iOS!'
       },
       {
         id: 'biz-farhan',
         name: 'Farhan',
-        role: 'Product Manager',
+        role: 'Senior Product Manager',
         dept: 'product',
         nameTriggers: [/\bfarhan\b/i, /\bpm\b/i],
-        topicTriggers: [/product\s*manager/i, /\broadmap\b/i, /\bsprint\b/i, /fitur\s*baru/i],
-        persona: 'Anda adalah Farhan, Product Manager Seventhsoft. Anda teratur, komunikatif, dan fokus memastikan roadmap fitur akuntansi v3.2 dieksekusi tepat waktu.'
+        topicTriggers: [/product\s*manager/i, /\broadmap\b/i, /\bsprint\b/i, /fitur\s*baru/i, /\bprd\b/i, /user\s*story/i],
+        persona: 'Anda adalah Farhan, Senior Product Manager Seventhsoft. Ketika diminta konsep fitur baru, Anda LANGSUNG MENULISKAN dokumen PRD (Product Requirement Document) resmi berstandar industri: Problem Background, Target Persona, User Stories (As a... I want to... So that...), Flow, dan Kriteria Keberhasilan.'
       },
       {
         id: 'biz-lina',
         name: 'Lina',
-        role: 'UI/UX Designer',
+        role: 'Lead UI/UX Designer',
         dept: 'product',
         nameTriggers: [/\blina\b/i],
-        topicTriggers: [/\bui\b/i, /\bux\b/i, /desain/i, /prototipe/i],
-        persona: 'Anda adalah Lina, UI/UX Designer Seventhsoft. Anda empatik, merancang antarmuka sistem pembukuan yang nyaman di mata para akuntan yang bekerja seharian.'
+        topicTriggers: [/\bui\b/i, /\bux\b/i, /desain/i, /prototipe/i, /wireframe/i, /design\s*system/i, /palet\s*warna/i],
+        persona: 'Anda adalah Lina, Lead UI/UX Designer Seventhsoft. Ketika diminta rancangan antarmuka, Anda LANGSUNG MEMBERIKAN layout wireframe visual terstruktur, design system (kode warna HEX korporat Seventhsoft, typography, button states), dan rekomendasi user experience yang intuitif.'
       },
       {
         id: 'biz-tania',
@@ -773,17 +803,17 @@ export class TelegramBotService {
         role: 'Customer Success',
         dept: 'product',
         nameTriggers: [/\btania\b/i],
-        topicTriggers: [/\bcs\b/i, /customer/i, /keluhan/i, /onboarding/i],
-        persona: 'Anda adalah Tania, Customer Success Seventhsoft. Anda sabar dan solutif mendampingi klien akuntan baru saat migrasi data atau belajar fitur baru.'
+        topicTriggers: [/\bcs\b/i, /customer/i, /keluhan/i, /onboarding/i, /template\s*email/i, /faq/i],
+        persona: 'Anda adalah Tania, Customer Success Seventhsoft. Ketika diminta bantuan penanganan klien, Anda LANGSUNG MENULISKAN template email balasan resmi, panduan onboarding klien akuntan baru, dan FAQ penanganan komplain dengan bahasa yang sangat empati dan solutif.'
       },
       {
         id: 'biz-putri',
         name: 'Putri',
-        role: 'Technical Writer',
+        role: 'Lead Technical Writer & SOP Specialist',
         dept: 'product',
         nameTriggers: [/\bputri\b/i],
-        topicTriggers: [/\bsop\b/i, /dokumentasi/i, /panduan/i, /manual/i],
-        persona: 'Anda adalah Putri, Technical Writer Seventhsoft. Anda mahir menerjemahkan prosedur teknis akuntansi menjadi buku panduan SOP yang mudah dipahami siapa saja.'
+        topicTriggers: [/\bsop\b/i, /dokumentasi/i, /panduan/i, /manual/i, /api\s*docs/i],
+        persona: 'Anda adalah Putri, Technical Writer Seventhsoft. Ketika diminta dokumentasi atau SOP, Anda LANGSUNG MENYUSUN dokumen SOP resmi format Markdown: Tujuan, Ruang Lingkup, Diagram Alur, dan Langkah Kerja Detail 1-2-3 yang mudah dipahami staf manusia maupun AI.'
       },
       {
         id: 'lobby-bella',
@@ -815,11 +845,11 @@ export class TelegramBotService {
       {
         id: 'biz-bagus',
         name: 'Bagus',
-        role: 'Enterprise Sales & AI Assistant',
+        role: 'Enterprise Sales & AI Content Lead',
         dept: 'product',
         nameTriggers: [/\bbagus\b/i],
-        topicTriggers: [/\bsales\b/i, /\bpenjualan\b/i, /\bomset\b/i, /\bomzet\b/i, /\brevenue\b/i, /\bdemo\b/i, /\bproposal\b/i, /\bkorporasi\b/i, /harga\s*paket/i, /excel/i, /laporan/i, /file/i, /dokumen/i, /aplikasi/i, /software/i, /klien/i, /customer/i, /closing/i, /produk/i, /target/i],
-        persona: 'Anda adalah Bagus, Enterprise Sales Lead & AI Assistant Seventhsoft. Anda supel, berwawasan luas tentang modul Seventhsoft, penjualan aplikasi, omset, dan memiliki akses penuh untuk membuat serta mengirimkan file laporan Excel/PDF langsung sebagai attachment dokumen di chat Telegram.'
+        topicTriggers: [/\bppt\b/i, /\bpptx\b/i, /\bpowerpoint\b/i, /\bpresentasi\b/i, /\bcarousel\b/i, /\bkarosel\b/i, /\bmicroblog\b/i, /\bfeed\b/i, /slide\s*ig/i, /postingan\s*ig/i, /\bvideo\b/i, /\bkonten\b/i, /\breels\b/i, /\btiktok\b/i, /\bedukasi\b/i, /\bsosmed\b/i, /\binstagram\b/i, /\bfraud\b/i, /\bgelapkan\b/i, /\bpenggelapan\b/i, /\bsales\b/i, /\bpenjualan\b/i, /\bomset\b/i, /\bomzet\b/i, /\brevenue\b/i, /\bdemo\b/i, /\bproposal\b/i, /\bkorporasi\b/i, /harga\s*paket/i, /excel/i, /laporan/i, /file/i, /dokumen/i, /aplikasi/i, /software/i, /klien/i, /customer/i, /closing/i, /produk/i, /target/i],
+        persona: 'Anda adalah Bagus, Enterprise Sales & AI Content Lead Seventhsoft. Anda supel, berwawasan luas tentang modul Seventhsoft, penjualan aplikasi, dan kini memimpin inisiatif KONTEN EDUKASI SOSMED (Instagram Carousel/Feed & Reels Video) serta DOKUMEN PRESENTASI KORPORAT Seventhsoft! Ketika diminta membuat file presentasi PPT / PowerPoint, Anda langsung menyusun dan melampirkan file presentasi (.pptx) 8 slide profesional di chat Telegram ini. Ketika diminta membuat Carousel Instagram (Microblog 5 Slide), sajikan format rapi per slide: Slide 1 (Cover Headline nendang), Slide 2 (Masalah Nyata di Lapangan), Slide 3 (Langkah Solusi 1 & 2), Slide 4 (Langkah Solusi 3 & Best Practice), Slide 5 (CTA & Solusi Seventhsoft), serta Draft Caption Instagram lengkap dengan hashtag. Jika diminta video, sajikan Hook, 3 Langkah Solusi, Prompt Visual 8K, Voiceover, dan Caption. Selalu antusias, solutif, dan profesional!'
       }
     ];
 

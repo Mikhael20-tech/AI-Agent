@@ -1,0 +1,5 @@
+node_modules/
+uploads/
+sample-docs/
+package-lock.json
+.git/

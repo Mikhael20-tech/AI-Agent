@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import * as XLSX from 'xlsx';
 import PDFDocument from 'pdfkit';
+import pptxgen from 'pptxgenjs';
+import JSZip from 'jszip';
 import { db } from './database.js';
 import { fileURLToPath } from 'url';
 
@@ -45,50 +47,51 @@ export class ReportGenerator {
         doc.rect(36, 36, 523, 4).fill(primaryColor);
 
         // 2. Company Header
-        doc.fillColor(primaryColor).fontSize(15).font('Helvetica-Bold')
+        doc.fillColor(primaryColor).fontSize(14).font('Helvetica-Bold')
            .text('PT SEVENTHSOFT TEKNOLOGI INDONESIA', 36, 46);
         
         doc.fillColor(secondaryColor).fontSize(8.5).font('Helvetica')
-           .text('Enterprise Accounting & ERP Solutions — Departemen Keuangan & HRD', 36, 64);
-        doc.text('Gedung Cyber 2 Lt. 18, Jl. H.R. Rasuna Said, Jakarta Selatan | Telp: (021) 5290-8800', 36, 76);
+           .text('Enterprise Accounting & ERP Solutions — Departemen Keuangan & HRD', 36, 63);
+        doc.text('Gedung Cyber 2 Lt. 18, Jl. H.R. Rasuna Said, Jakarta Selatan | Telp: (021) 5290-8800', 36, 75);
 
-        doc.moveTo(36, 92).lineTo(559, 92).strokeColor(tableBorder).stroke();
+        doc.moveTo(36, 90).lineTo(559, 90).strokeColor(tableBorder).stroke();
 
         // 3. Document Title Box
-        doc.rect(36, 100, 523, 38).fill('#f8fafc');
-        doc.rect(36, 100, 523, 38).strokeColor(accentColor).stroke();
+        doc.rect(36, 98, 523, 36).fill('#f8fafc');
+        doc.rect(36, 98, 523, 36).strokeColor(accentColor).stroke();
 
         doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
-           .text('REKAPITULASI DAFTAR GAJI KARYAWAN (PAYROLL SUMMARY)', 45, 108, { align: 'center', width: 505 });
-        doc.fillColor('#334155').fontSize(8.5).font('Helvetica')
-           .text(`Periode: ${payroll.period_label || payroll.period}  |  Tanggal Pembayaran: ${payroll.payment_date} (Via BCA Payroll)`, 45, 123, { align: 'center', width: 505 });
+           .text('REKAPITULASI DAFTAR GAJI KARYAWAN (PAYROLL SUMMARY)', 45, 105, { align: 'center', width: 505 });
+        doc.fillColor('#334155').fontSize(8).font('Helvetica')
+           .text(`Periode: ${payroll.period_label || payroll.period}  |  Tanggal Pembayaran: ${payroll.payment_date} (Via BCA Payroll)`, 45, 120, { align: 'center', width: 505 });
 
         // 4. Meta Information
-        let y = 148;
-        doc.fillColor(primaryColor).fontSize(9).font('Helvetica-Bold').text('Informasi Otorisasi & Disburse Bank:', 36, y);
-        y += 14;
+        let y = 144;
+        doc.fillColor(primaryColor).fontSize(8.5).font('Helvetica-Bold').text('Informasi Otorisasi & Disburse Bank:', 36, y);
+        y += 13;
 
         doc.fontSize(8).font('Helvetica').fillColor('#1e293b');
         doc.text(`• Rekening Debet      : ${payroll.disbursement_bank}`, 40, y);
-        doc.text(`• Status Payroll       : [ ${payroll.status} ]`, 320, y);
+        doc.text(`• Status Payroll       : [ ${payroll.status} ]`, 330, y);
         y += 12;
         doc.text(`• Jurnal COA Debet  : ${payroll.coa_debet}`, 40, y);
-        doc.text(`• Jurnal COA Kredit : ${payroll.coa_kredit}`, 320, y);
-        y += 18;
+        doc.text(`• Jurnal COA Kredit : ${payroll.coa_kredit}`, 330, y);
+        y += 16;
 
-        // 5. Table Header
+        // 5. Table Header (Lebar Total: 523, dari X=36 sampai X=559)
+        // Kolom: No(18), NIP(45), Nama(105), Jabatan(95), Gaji Pokok(52), Tunjangan(45), BPJS(40), PPh21(42), Net THP(52)
         const tableTop = y;
         doc.rect(36, tableTop, 523, 18).fill(primaryColor);
         doc.fillColor('#ffffff').fontSize(7.5).font('Helvetica-Bold');
-        doc.text('No', 40, tableTop + 5, { width: 18 });
-        doc.text('NIP', 60, tableTop + 5, { width: 45 });
-        doc.text('Nama Karyawan', 108, tableTop + 5, { width: 105 });
-        doc.text('Jabatan', 215, tableTop + 5, { width: 95 });
-        doc.text('Gaji Pokok', 315, tableTop + 5, { width: 55, align: 'right' });
-        doc.text('Tunjangan', 375, tableTop + 5, { width: 50, align: 'right' });
-        doc.text('BPJS', 430, tableTop + 5, { width: 38, align: 'right' });
-        doc.text('PPh 21', 472, tableTop + 5, { width: 38, align: 'right' });
-        doc.text('Net THP', 514, tableTop + 5, { width: 42, align: 'right' });
+        doc.text('No', 38, tableTop + 5, { width: 18, align: 'center' });
+        doc.text('NIP', 58, tableTop + 5, { width: 45, align: 'center' });
+        doc.text('Nama Karyawan', 106, tableTop + 5, { width: 105, align: 'left' });
+        doc.text('Jabatan', 214, tableTop + 5, { width: 95, align: 'left' });
+        doc.text('Gaji Pokok', 312, tableTop + 5, { width: 52, align: 'right' });
+        doc.text('Tunjangan', 367, tableTop + 5, { width: 45, align: 'right' });
+        doc.text('BPJS', 415, tableTop + 5, { width: 40, align: 'right' });
+        doc.text('PPh 21', 458, tableTop + 5, { width: 42, align: 'right' });
+        doc.text('Net THP', 503, tableTop + 5, { width: 52, align: 'right' });
 
         y = tableTop + 18;
         const emps = payroll.employees || [];
@@ -98,15 +101,15 @@ export class ReportGenerator {
           doc.rect(36, y, 523, 16).fill(rowBg);
 
           doc.fillColor('#0f172a').fontSize(7).font('Helvetica');
-          doc.text(String(idx + 1), 40, y + 4, { width: 18 });
-          doc.text(emp.nip, 60, y + 4, { width: 45 });
-          doc.font('Helvetica-Bold').text(emp.name, 108, y + 4, { width: 105 }).font('Helvetica');
-          doc.text(emp.role, 215, y + 4, { width: 95 });
-          doc.text((emp.base_salary || 0).toLocaleString('id-ID'), 315, y + 4, { width: 55, align: 'right' });
-          doc.text((emp.allowance || 0).toLocaleString('id-ID'), 375, y + 4, { width: 50, align: 'right' });
-          doc.text((emp.bpjs || 0).toLocaleString('id-ID'), 430, y + 4, { width: 38, align: 'right' });
-          doc.text((emp.pph21 || 0).toLocaleString('id-ID'), 472, y + 4, { width: 38, align: 'right' });
-          doc.font('Helvetica-Bold').text((emp.net || 0).toLocaleString('id-ID'), 514, y + 4, { width: 42, align: 'right' });
+          doc.text(String(idx + 1), 38, y + 4, { width: 18, align: 'center' });
+          doc.text(emp.nip, 58, y + 4, { width: 45, align: 'center' });
+          doc.font('Helvetica-Bold').text(emp.name, 106, y + 4, { width: 105, align: 'left' }).font('Helvetica');
+          doc.text(emp.role, 214, y + 4, { width: 95, align: 'left' });
+          doc.text((emp.base_salary || 0).toLocaleString('id-ID'), 312, y + 4, { width: 52, align: 'right' });
+          doc.text((emp.allowance || 0).toLocaleString('id-ID'), 367, y + 4, { width: 45, align: 'right' });
+          doc.text((emp.bpjs || 0).toLocaleString('id-ID'), 415, y + 4, { width: 40, align: 'right' });
+          doc.text((emp.pph21 || 0).toLocaleString('id-ID'), 458, y + 4, { width: 42, align: 'right' });
+          doc.font('Helvetica-Bold').text((emp.net || 0).toLocaleString('id-ID'), 503, y + 4, { width: 52, align: 'right' });
 
           doc.rect(36, y, 523, 16).strokeColor('#e2e8f0').stroke();
           y += 16;
@@ -116,49 +119,64 @@ export class ReportGenerator {
         doc.rect(36, y, 523, 18).fill('#e0f2fe');
         doc.rect(36, y, 523, 18).strokeColor(accentColor).stroke();
         doc.fillColor(primaryColor).fontSize(7.5).font('Helvetica-Bold');
-        doc.text('TOTAL SELURUH KARYAWAN', 60, y + 5, { width: 250 });
-        doc.text((payroll.total_gross || 0).toLocaleString('id-ID'), 315, y + 5, { width: 110, align: 'right' });
-        doc.text((payroll.total_bpjs || 0).toLocaleString('id-ID'), 430, y + 5, { width: 38, align: 'right' });
-        doc.text((payroll.total_pph21 || 0).toLocaleString('id-ID'), 472, y + 5, { width: 38, align: 'right' });
-        doc.text(`Rp ${(payroll.total_net || 0).toLocaleString('id-ID')}`, 500, y + 5, { width: 56, align: 'right' });
+        doc.text(`TOTAL (${emps.length} KARYAWAN)`, 58, y + 5, { width: 245, align: 'left' });
+        doc.text(`Gross: ${(payroll.total_gross || 0).toLocaleString('id-ID')}`, 312, y + 5, { width: 100, align: 'right' });
+        doc.text((payroll.total_bpjs || 0).toLocaleString('id-ID'), 415, y + 5, { width: 40, align: 'right' });
+        doc.text((payroll.total_pph21 || 0).toLocaleString('id-ID'), 458, y + 5, { width: 42, align: 'right' });
+        doc.text((payroll.total_net || 0).toLocaleString('id-ID'), 503, y + 5, { width: 52, align: 'right' });
 
-        y += 28;
+        y += 24;
 
-        // 6. Ringkasan Finansial Card
-        doc.rect(36, y, 523, 56).fill('#f8fafc');
-        doc.rect(36, y, 523, 56).strokeColor(tableBorder).stroke();
+        // 6. Ringkasan Finansial Card (Dirancang 2 kolom terpisah agar tidak pernah bertabrakan)
+        const cardHeight = 68;
+        doc.rect(36, y, 523, cardHeight).fill('#f8fafc');
+        doc.rect(36, y, 523, cardHeight).strokeColor(tableBorder).stroke();
         
-        doc.fillColor(primaryColor).fontSize(8.5).font('Helvetica-Bold').text('IKHTISAR ANGGARAN PAYROLL (GENERAL LEDGER RECONCILIATION):', 45, y + 7);
+        // Sisi Kiri: Rincian Anggaran (Width: 285)
+        doc.fillColor(primaryColor).fontSize(8).font('Helvetica-Bold')
+           .text('IKHTISAR ANGGARAN & REKONSILIASI GL (GENERAL LEDGER):', 46, y + 8);
         doc.fontSize(7.5).font('Helvetica').fillColor('#334155');
-        doc.text(`• Total Gaji Bruto (Gross Payroll)           : Rp ${(payroll.total_gross || 0).toLocaleString('id-ID')}`, 45, y + 21);
-        doc.text(`• Total Pemotongan BPJS TK & Kes        : Rp ${(payroll.total_bpjs || 0).toLocaleString('id-ID')} (Disetor ke BPJS Ketenagakerjaan & Kesehatan)`, 45, y + 32);
-        doc.text(`• Total Potongan PPh 21 Pegawai          : Rp ${(payroll.total_pph21 || 0).toLocaleString('id-ID')} (Kompilasi SPT Masa PPh 21)`, 45, y + 43);
+        doc.text(`• Total Gaji Bruto (Gross Payroll) : Rp ${(payroll.total_gross || 0).toLocaleString('id-ID')}`, 46, y + 22);
+        doc.text(`• Total Potongan BPJS TK & Kes    : Rp ${(payroll.total_bpjs || 0).toLocaleString('id-ID')} (Disetor ke BPJS)`, 46, y + 34);
+        doc.text(`• Total Potongan PPh 21 Pegawai     : Rp ${(payroll.total_pph21 || 0).toLocaleString('id-ID')} (Kompilasi SPT Masa PPh 21)`, 46, y + 46);
         
-        doc.fillColor('#047857').font('Helvetica-Bold');
-        doc.text(`Total Bersih Ditransfer (Take Home Pay) :`, 320, y + 21);
-        doc.fontSize(11).text(`Rp ${(payroll.total_net || 0).toLocaleString('id-ID')}`, 320, y + 34);
+        // Sisi Kanan: Badge Bersih Ditransfer (Kotak Hijau Eksklusif, Width: 185, X: 360)
+        doc.rect(358, y + 8, 190, 52).fillAndStroke('#ecfdf5', '#10b981');
+        doc.fillColor('#065f46').fontSize(7.5).font('Helvetica-Bold')
+           .text('TOTAL BERSIH (TAKE HOME PAY)', 358, y + 14, { width: 190, align: 'center' });
+        doc.fillColor('#047857').fontSize(12).font('Helvetica-Bold')
+           .text(`Rp ${(payroll.total_net || 0).toLocaleString('id-ID')}`, 358, y + 26, { width: 190, align: 'center' });
+        doc.fillColor('#059669').fontSize(6.5).font('Helvetica')
+           .text(`Otorisasi: Disbursed via BCA Corporate Payroll`, 358, y + 43, { width: 190, align: 'center' });
 
-        y += 70;
+        y += cardHeight + 24;
 
         // 7. Tanda Tangan Resmi Four-Eyes Principle
-        doc.fontSize(8).font('Helvetica').fillColor('#0f172a');
+        doc.fontSize(8).font('Helvetica').fillColor('#475569');
         doc.text('Dipersiapkan oleh,', 60, y);
-        doc.text('Disetujui dan Diotorisasi,', 380, y);
-        y += 38;
+        doc.text('Disetujui & Diotorisasi oleh,', 360, y);
 
-        doc.font('Helvetica-Bold');
+        // Badge Verifikasi Digital Otorisasi
+        doc.rect(360, y + 12, 160, 22).fillAndStroke('#f0fdf4', '#86efac');
+        doc.fillColor('#15803d').fontSize(7).font('Helvetica-Bold')
+           .text('✔ OTORISASI DIGITAL VALID', 360, y + 16, { width: 160, align: 'center' });
+        doc.fontSize(6).font('Helvetica')
+           .text(`Ref ID: 088-291-7721 • Paid to BCA`, 360, y + 24, { width: 160, align: 'center' });
+
+        y += 42;
+        doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(8.5);
         doc.text('Doni Saputra', 60, y);
-        doc.text('Mikhael, S.Ak., CA', 380, y);
-        y += 10;
+        doc.text('Mikhael, S.Ak., CA', 360, y);
+        y += 11;
 
-        doc.font('Helvetica').fontSize(7).fillColor('#64748b');
+        doc.font('Helvetica').fontSize(7.5).fillColor('#64748b');
         doc.text('Payroll Specialist (Seventhsoft)', 60, y);
-        doc.text('Finance Lead (Otorisator Pembayaran)', 380, y);
+        doc.text('Finance Lead (Otorisator Pembayaran)', 360, y);
 
         // 8. Footer UU PDP & ITE
-        doc.moveTo(36, 765).lineTo(559, 765).strokeColor(tableBorder).stroke();
+        doc.moveTo(36, 785).lineTo(559, 785).strokeColor(tableBorder).stroke();
         doc.fontSize(6.5).font('Helvetica').fillColor('#94a3b8');
-        doc.text('Dokumen resmi ini di-generate otomatis oleh Seventhsoft Accounting AI Agent. Dilindungi UU PDP No. 27/2022 dan UU ITE.', 36, 772, { align: 'center', width: 523 });
+        doc.text('Dokumen resmi ini di-generate otomatis oleh Seventhsoft Accounting AI Agent. Dilindungi UU PDP No. 27/2022 dan UU ITE.', 36, 792, { align: 'center', width: 523 });
 
         doc.end();
 
@@ -589,5 +607,358 @@ export class ReportGenerator {
     }
 
     return null;
+  }
+
+  /**
+   * Menghasilkan file presentasi PowerPoint (.PPTX) 8 Slide Profesional dengan Desain Card UI Modern & Animasi Transisi
+   * @param {string} customTitle
+   * @returns {Promise<string>} - Absolute path file .pptx
+   */
+  static async generateFraudPreventionPptx(customTitle = 'Strategi Pencegahan Pencurian Keuangan') {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const fileName = `Presentasi_Fraud_Prevention_Seventhsoft_${timestamp}.pptx`;
+    const filePath = path.join(EXPORTS_DIR, fileName);
+
+    const pres = new pptxgen();
+    pres.layout = 'LAYOUT_16x9'; // Standar 10 x 5.625 inci
+
+    // Helper: Header Halaman Standar (Anti-Overlap)
+    const addHeader = (slide, category, title, isDark = false) => {
+      slide.addText(category.toUpperCase(), {
+        x: 0.8, y: 0.35, w: 8.4, h: 0.28,
+        fontSize: 10, bold: true, color: isDark ? '38BDF8' : '2563EB'
+      });
+      slide.addText(title, {
+        x: 0.8, y: 0.65, w: 8.4, h: 0.65,
+        fontSize: 18, bold: true, color: isDark ? 'FFFFFF' : '0F172A'
+      });
+      slide.addShape(pres.ShapeType.rect, {
+        x: 0.8, y: 1.35, w: 8.4, h: 0.02,
+        fill: { color: isDark ? '334155' : 'E2E8F0' },
+        line: { color: isDark ? '334155' : 'E2E8F0' }
+      });
+    };
+
+    // ==========================================
+    // SLIDE 1: COVER SLIDE (Dark Navy Elegan)
+    // ==========================================
+    let s1 = pres.addSlide();
+    s1.background = { color: '0B132B' };
+
+    s1.addShape(pres.ShapeType.roundRect, { x: 0.8, y: 1.0, w: 4.2, h: 0.35, fill: { color: '1C2541' }, rectRadius: 0.05 });
+    s1.addText('PT SEVENTHSOFT TEKNOLOGI INDONESIA', { x: 0.9, y: 1.0, w: 4.0, h: 0.35, fontSize: 10, color: '38BDF8', bold: true });
+
+    s1.addText('Benteng Finansial Bisnis:\nStrategi Pencegahan Pencurian Kas', {
+      x: 0.8, y: 1.5, w: 8.4, h: 1.6,
+      fontSize: 27, color: 'FFFFFF', bold: true
+    });
+    s1.addText('Framework Pengendalian Internal, Four-Eyes Principle & Otomasi Sistem ERP', {
+      x: 0.8, y: 3.3, w: 8.4, h: 0.5,
+      fontSize: 13, color: '94A3B8'
+    });
+
+    s1.addShape(pres.ShapeType.roundRect, { x: 0.8, y: 4.2, w: 4.8, h: 0.55, fill: { color: '1C2541' }, rectRadius: 0.08 });
+    s1.addText('👤 Disiapkan oleh: Tim Enterprise Solutions Seventhsoft', {
+      x: 0.9, y: 4.2, w: 4.6, h: 0.55, fontSize: 11, color: 'CBD5E1'
+    });
+
+    // ==========================================
+    // SLIDE 2: REALITA DI LAPANGAN (3 Cards Stacked)
+    // ==========================================
+    let s2 = pres.addSlide();
+    s2.background = { color: 'F8FAFC' };
+    addHeader(s2, 'Fakta & Statistik Bisnis', 'Mengapa Pencurian Kas Menjadi Ancaman Nyata?');
+
+    const s2Cards = [
+      {
+        badge: '⚠️ Kerugian Rata-Rata 5% Omset Per Tahun',
+        badgeColor: 'DC2626',
+        desc: 'Survei ACFE (Association of Certified Fraud Examiners) membuktikan bisnis ritel & grosir kehilangan rata-rata 5% revenue tahunan akibat kecurangan kas internal.',
+        lineColor: 'FCA5A5'
+      },
+      {
+        badge: '⏳ 12-18 Bulan Terlambat Terdeteksi',
+        badgeColor: 'D97706',
+        desc: 'Mayoritas fraud baru disadari pemilik usaha setelah berjalan lebih dari 1 tahun karena manipulasi nota dan pembukuan manual yang ditutup-tutupi.',
+        lineColor: 'FDE68A'
+      },
+      {
+        badge: '🔓 Kepercayaan Tanpa Kontrol Berimbang',
+        badgeColor: '2563EB',
+        desc: '90% pelaku adalah karyawan kepercayaan yang diberikan akses tunggal memegang kas dan input laporan tanpa pengawasan ganda (Four-Eyes Principle).',
+        lineColor: 'BFDBFE'
+      }
+    ];
+
+    s2Cards.forEach((card, idx) => {
+      const topY = 1.55 + (idx * 1.2);
+      s2.addShape(pres.ShapeType.roundRect, {
+        x: 0.8, y: topY, w: 8.4, h: 1.05,
+        fill: { color: 'FFFFFF' },
+        line: { color: card.lineColor, width: 1.5 },
+        rectRadius: 0.08
+      });
+      s2.addText(card.badge, {
+        x: 1.0, y: topY + 0.1, w: 8.0, h: 0.3,
+        fontSize: 12, bold: true, color: card.badgeColor
+      });
+      s2.addText(card.desc, {
+        x: 1.0, y: topY + 0.4, w: 8.0, h: 0.55,
+        fontSize: 10.5, color: '475569'
+      });
+    });
+
+    // ==========================================
+    // SLIDE 3: 4 MODUS UTAMA (2x2 Grid Cards)
+    // ==========================================
+    let s3 = pres.addSlide();
+    s3.background = { color: 'F8FAFC' };
+    addHeader(s3, 'Identifikasi Risiko Internal', '4 Modus Pencurian Keuangan yang Paling Sering Terjadi');
+
+    const s3Grid = [
+      { col: 0, row: 0, title: '🔴 1. Void Kasir Fiktif', desc: 'Pelanggan bayar tunai, kasir membatalkan nota di sistem POS lalu mengambil uang fisiknya.' },
+      { col: 1, row: 0, title: '🔴 2. Ghost Vendor & Mark-Up', desc: 'Membuat tagihan faktur belanja supplier fiktif atau menaikkan harga belanja kantor tanpa cek pasar.' },
+      { col: 0, row: 1, title: '🔴 3. Rekonsiliasi Tertunda', desc: 'Menutupi defisit kas fisik dengan menunda pencocokan mutasi e-statement bank harian sampai akhir bulan.' },
+      { col: 1, row: 1, title: '🔴 4. Akses Tunggal Tanpa Approval', desc: 'Satu orang memegang kas, mencatat jurnal pembukuan, dan menyetujui pengeluaran sekaligus.' }
+    ];
+
+    s3Grid.forEach(item => {
+      const cardX = item.col === 0 ? 0.8 : 5.15;
+      const cardY = item.row === 0 ? 1.55 : 3.35;
+      s3.addShape(pres.ShapeType.roundRect, {
+        x: cardX, y: cardY, w: 4.05, h: 1.6,
+        fill: { color: 'FFFFFF' },
+        line: { color: 'E2E8F0', width: 1.5 },
+        rectRadius: 0.08
+      });
+      s3.addText(item.title, {
+        x: cardX + 0.2, y: cardY + 0.15, w: 3.65, h: 0.35,
+        fontSize: 12.5, bold: true, color: '0F172A'
+      });
+      s3.addText(item.desc, {
+        x: cardX + 0.2, y: cardY + 0.55, w: 3.65, h: 0.95,
+        fontSize: 10.5, color: '64748B'
+      });
+    });
+
+    // ==========================================
+    // SLIDE 4: FRAMEWORK 3 LAPIS (Dark Cards)
+    // ==========================================
+    let s4 = pres.addSlide();
+    s4.background = { color: '0F172A' };
+    addHeader(s4, 'Strategi Pengendalian', 'Framework Pertahanan Finansial 3 Lapis', true);
+
+    const s4Layers = [
+      {
+        badge: '🛡️ LAPIS 1: PENCEGAHAN (PREVENTIVE)',
+        badgeColor: '38BDF8',
+        desc: 'Pembatasan hak akses berbasis peran (RBAC) & penegakan Four-Eyes Principle untuk semua transaksi void dan pengeluaran kas.',
+        borderColor: '38BDF8'
+      },
+      {
+        badge: '🔍 LAPIS 2: DETEKSI REALTIME (DETECTIVE)',
+        badgeColor: 'F59E0B',
+        desc: 'Auto-matching mutasi bank harian dan notifikasi otomatis ke smartphone owner jika ada selisih kas fisik vs sistem.',
+        borderColor: 'F59E0B'
+      },
+      {
+        badge: '⚖️ LAPIS 3: AUDIT FORENSIK DIGITAL (CORRECTIVE)',
+        badgeColor: '10B981',
+        desc: 'Pencatatan jejak audit (Audit Trail) dengan hashing SHA-256 yang immutable (tidak dapat dihapus atau diedit).',
+        borderColor: '10B981'
+      }
+    ];
+
+    s4Layers.forEach((layer, idx) => {
+      const topY = 1.55 + (idx * 1.2);
+      s4.addShape(pres.ShapeType.roundRect, {
+        x: 0.8, y: topY, w: 8.4, h: 1.05,
+        fill: { color: '1E293B' },
+        line: { color: layer.borderColor, width: 1.5 },
+        rectRadius: 0.08
+      });
+      s4.addText(layer.badge, {
+        x: 1.0, y: topY + 0.1, w: 8.0, h: 0.3,
+        fontSize: 12, bold: true, color: layer.badgeColor
+      });
+      s4.addText(layer.desc, {
+        x: 1.0, y: topY + 0.4, w: 8.0, h: 0.55,
+        fontSize: 10.5, color: '94A3B8'
+      });
+    });
+
+    // ==========================================
+    // SLIDE 5: FOUR-EYES PRINCIPLE (2 Wide Cards)
+    // ==========================================
+    let s5 = pres.addSlide();
+    s5.background = { color: 'F8FAFC' };
+    addHeader(s5, 'Standar Tata Kelola Korporat', 'Four-Eyes Principle: Otorisasi Ganda Anti-Fraud');
+
+    // Left Box: Maker-Checker
+    s5.addShape(pres.ShapeType.roundRect, {
+      x: 0.8, y: 1.55, w: 4.05, h: 3.45,
+      fill: { color: 'FFFFFF' },
+      line: { color: '2563EB', width: 1.5 },
+      rectRadius: 0.08
+    });
+    s5.addText('👥 Konsep Maker - Checker', {
+      x: 1.0, y: 1.7, w: 3.65, h: 0.35,
+      fontSize: 13.5, bold: true, color: '1E3A8A'
+    });
+    s5.addText([
+      { text: '• Aturan Emas:\n', options: { bold: true, color: '0F172A' } },
+      { text: 'Setiap transaksi finansial WAJIB melewati minimal 2 pihak independen.\n\n', options: { color: '475569' } },
+      { text: '• Maker (Pembuat):\n', options: { bold: true, color: '0F172A' } },
+      { text: 'Staf kasir/admin hanya berhak membuat draf transaksi tanpa izin posting GL.\n\n', options: { color: '475569' } },
+      { text: '• Checker (Penyetujui):\n', options: { bold: true, color: '0F172A' } },
+      { text: 'Supervisor / Finance Lead memverifikasi dokumen fisik sebelum otorisasi sah.', options: { color: '475569' } }
+    ], { x: 1.0, y: 2.15, w: 3.65, h: 2.65, fontSize: 11 });
+
+    // Right Box: Operasional
+    s5.addShape(pres.ShapeType.roundRect, {
+      x: 5.15, y: 1.55, w: 4.05, h: 3.45,
+      fill: { color: 'FFFFFF' },
+      line: { color: '10B981', width: 1.5 },
+      rectRadius: 0.08
+    });
+    s5.addText('🔒 Penerapan di Operasional', {
+      x: 5.35, y: 1.7, w: 3.65, h: 0.35,
+      fontSize: 13.5, bold: true, color: '065F46'
+    });
+    s5.addText([
+      { text: '• Kasir & POS Retail:\n', options: { bold: true, color: '0F172A' } },
+      { text: 'Tombol Void nota dan diskon manual terkunci otomatis, butuh scan supervisor.\n\n', options: { color: '475569' } },
+      { text: '• Pembelian & Belanja:\n', options: { bold: true, color: '0F172A' } },
+      { text: 'Draf tagihan vendor tidak dapat cair tanpa persetujuan bertingkat Finance Lead.\n\n', options: { color: '475569' } },
+      { text: '• Buku Besar (GL):\n', options: { bold: true, color: '0F172A' } },
+      { text: 'Draf transaksi AI berstatus pending review sampai klik otorisasi manusia.', options: { color: '475569' } }
+    ], { x: 5.35, y: 2.15, w: 3.65, h: 2.65, fontSize: 11 });
+
+    // ==========================================
+    // SLIDE 6: SOLUSI SEVENTHSOFT ERP (3 Cards)
+    // ==========================================
+    let s6 = pres.addSlide();
+    s6.background = { color: 'F8FAFC' };
+    addHeader(s6, 'Implementasi Teknologi', 'Bagaimana Seventhsoft ERP Mengotomatisasi Keamanan Kas?');
+
+    const s6Features = [
+      {
+        badge: '⚡ Auto Rekonsiliasi Bank Harian',
+        desc: 'Sinkronisasi mutasi rekening bank BCA/Mandiri harian secara otomatis. Selisih langsung terdeteksi dalam hitungan detik tanpa nunggu akhir bulan.'
+      },
+      {
+        badge: '🤖 AI Anomaly Detection & Fraud Alert',
+        desc: 'Sistem AI otomatis menandai transaksi void berulang di jam sepi, lonjakan HPP ganjil, dan invoice tanpa purchase order resmi.'
+      },
+      {
+        badge: '📱 One-Click Approval via Smartphone',
+        desc: 'Owner atau Finance Lead dapat mengotorisasi draf transaksi dari mana saja secara aman melalui Bot Telegram atau Mobile App.'
+      }
+    ];
+
+    s6Features.forEach((feat, idx) => {
+      const topY = 1.55 + (idx * 1.2);
+      s6.addShape(pres.ShapeType.roundRect, {
+        x: 0.8, y: topY, w: 8.4, h: 1.05,
+        fill: { color: 'FFFFFF' },
+        line: { color: '10B981', width: 1.5 },
+        rectRadius: 0.08
+      });
+      s6.addText(feat.badge, {
+        x: 1.0, y: topY + 0.1, w: 8.0, h: 0.3,
+        fontSize: 12, bold: true, color: '065F46'
+      });
+      s6.addText(feat.desc, {
+        x: 1.0, y: topY + 0.4, w: 8.0, h: 0.55,
+        fontSize: 10.5, color: '475569'
+      });
+    });
+
+    // ==========================================
+    // SLIDE 7: ROADMAP PENERAPAN (4 Columns)
+    // ==========================================
+    let s7 = pres.addSlide();
+    s7.background = { color: 'F8FAFC' };
+    addHeader(s7, 'Tahapan Penerapan', 'Roadmap Implementasi Sistem Finansial Aman (4 Minggu)');
+
+    const s7Steps = [
+      { week: 'MINGGU 1', title: 'Audit SOP & Akses', desc: 'Pemetaan wewenang staf, kunci tombol void, dan pembatasan akses rekening.' },
+      { week: 'MINGGU 2', title: 'Setup DB & Bank', desc: 'Integrasi database Seventhsoft dengan mutasi e-statement bank harian.' },
+      { week: 'MINGGU 3', title: 'Training Tim', desc: 'Pelatihan kasir & approval supervisor Four-Eyes Principle via Telegram.' },
+      { week: 'MINGGU 4', title: 'Go-Live 100%', desc: 'Sistem beroperasi penuh dengan monitoring real-time AI anomaly detection.' }
+    ];
+
+    s7Steps.forEach((st, idx) => {
+      const colX = 0.8 + (idx * 2.15);
+      s7.addShape(pres.ShapeType.roundRect, {
+        x: colX, y: 1.7, w: 2.0, h: 3.1,
+        fill: { color: 'FFFFFF' },
+        line: { color: idx === 3 ? '10B981' : '2563EB', width: 1.5 },
+        rectRadius: 0.08
+      });
+      s7.addText(st.week, {
+        x: colX + 0.1, y: 1.85, w: 1.8, h: 0.3,
+        fontSize: 10, bold: true, color: idx === 3 ? '10B981' : '2563EB', align: 'center'
+      });
+      s7.addText(st.title, {
+        x: colX + 0.1, y: 2.2, w: 1.8, h: 0.55,
+        fontSize: 12, bold: true, color: '0F172A', align: 'center'
+      });
+      s7.addText(st.desc, {
+        x: colX + 0.15, y: 2.85, w: 1.7, h: 1.7,
+        fontSize: 10, color: '64748B', align: 'center'
+      });
+    });
+
+    // ==========================================
+    // SLIDE 8: CLOSING (Dark Hero)
+    // ==========================================
+    let s8 = pres.addSlide();
+    s8.background = { color: '0B132B' };
+
+    s8.addText('KONSULTASI & ASSESSMENT GRATIS', {
+      x: 0.8, y: 1.2, w: 8.4, h: 0.35,
+      fontSize: 12, color: '38BDF8', bold: true
+    });
+    s8.addText('Lindungi Aset Bisnis Anda Sebelum Terjadi Kebocoran!', {
+      x: 0.8, y: 1.6, w: 8.4, h: 1.4,
+      fontSize: 26, color: 'FFFFFF', bold: true
+    });
+    s8.addText('Sistem yang rapi bukan tanda ketidakpercayaan, tapi bentuk perlindungan bagi aset perusahaan dan integritas karyawan Anda.', {
+      x: 0.8, y: 3.1, w: 8.4, h: 0.6,
+      fontSize: 13, color: '94A3B8'
+    });
+
+    s8.addShape(pres.ShapeType.roundRect, { x: 0.8, y: 4.0, w: 8.4, h: 0.75, fill: { color: '1C2541' }, rectRadius: 0.08 });
+    s8.addText('🌐 Website: seventhsoft.com   |   📞 Konsultasi Demo: 0812-XXXX-XXXX   |   PT Seventhsoft Teknologi Indonesia', {
+      x: 0.9, y: 4.0, w: 8.2, h: 0.75,
+      fontSize: 11.5, color: 'E2E8F0', bold: true, align: 'center'
+    });
+
+    // Tulis file awal PPTX
+    await pres.writeFile({ fileName: filePath });
+
+    // ==========================================
+    // INJECT ANIMASI TRANSISI (Slide Push Transition via OOXML)
+    // ==========================================
+    try {
+      const data = fs.readFileSync(filePath);
+      const zip = await JSZip.loadAsync(data);
+      const slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'));
+      for (const sf of slideFiles) {
+        let xml = await zip.file(sf).async('string');
+        if (!xml.includes('<p:transition')) {
+          xml = xml.replace('</p:sld>', '<p:transition spd="fast"><p:push dir="r"/></p:transition></p:sld>');
+          zip.file(sf, xml);
+        }
+      }
+      const finalBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+      fs.writeFileSync(filePath, finalBuffer);
+      console.log('[ReportGenerator] Animasi transisi slide berhasil diinject ke file PPTX!');
+    } catch (animErr) {
+      console.warn('[ReportGenerator] Gagal menginject animasi transisi:', animErr.message);
+    }
+
+    return filePath;
   }
 }
