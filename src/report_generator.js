@@ -961,4 +961,137 @@ export class ReportGenerator {
 
     return filePath;
   }
+
+  /**
+   * Menghasilkan file Excel (.xlsx) Kalender Konten Media Sosial 30 Hari (Bulan November 2026)
+   * Terdiri dari 3 Sheet: Kalender_Konten_30_Hari, Pilar_dan_KPI, SOP_Produksi
+   */
+  static generateContentCalendarExcel() {
+    const wb = XLSX.utils.book_new();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const pilarList = [
+      'Edukasi Anti-Fraud Finansial',
+      'Best Practice SOP Akuntansi',
+      'Fitur Unggulan ERP Seventhsoft',
+      'Studi Kasus & Kerugian Bisnis Nyata',
+      'Tips Pajak & Efisiensi Operasional'
+    ];
+    const formats = ['Carousel 5 Slide', 'Reels Edukasi 60s', 'Infografis Ringkas', 'Video Demo Fitur ERP'];
+    const pics = [
+      'Bagus (Sales & Copywriter)',
+      'Sarah (Frontend & UI Demo)',
+      'Lina (Akuntansi & Jurnal)',
+      'Deni (QA & SOP Auditor)',
+      'Fikri (Backend & Keamanan Data)'
+    ];
+
+    const hooks = [
+      { hook: '5 Trik Kasir Memanipulasi Void Nota & Cara Kunci Otomatisnya', angle: 'Bongkar pola fraud kasir offline retail dan solusi scan supervisor di Seventhsoft POS.', cta: 'Komen "KASIR" buat dapetin template checklist audit kasir gratis!' },
+      { hook: 'Kenapa Rekonsiliasi Bank Masih Selisih Tiap Akhir Bulan?', angle: 'Penyebab utama mutasi e-banking gak sinkron sama general ledger dan cara auto-match AI.', cta: 'Share ke tim finance kamu yang sering lembur tanggal 30!' },
+      { hook: 'Waspada Modus Ghost Vendor: Pengadaan Fiktif yang Menguras Kas', angle: 'Cerita nyata perusahaan manufaktur rugi ratusan juta karena approval sepihak staf purchasing.', cta: 'Terapkan Four-Eyes Principle sekarang. Cek link di bio.' },
+      { hook: 'Four-Eyes Principle: Kenapa Approval Keuangan Gak Boleh 1 Orang', angle: 'Pemisahan tugas Maker, Checker, dan Approver langsung dari bot Telegram.', cta: 'Tonton video demonstrasi approval kami di profil!' },
+      { hook: 'Cara Hitung PPh 21 TER 2026 Tanpa Takut Salah Tarif', angle: 'Panduan praktis formula tarif efektif rata-rata untuk HRD dan akuntan pemula.', cta: 'Save postingan ini untuk acuan penggajian bulan ini!' },
+      { hook: 'Studi Kasus: Distributor Sparepart Pangkas Waktu Stock Opname 70%', angle: 'Transformasi dari catatan kertas ke barcode warehouse scan real-time.', cta: 'DM "DEMO" untuk konsultasi implementasi gudang multi-cabang.' },
+      { hook: '3 Tanda Rekening Koran Perusahaan Anda Mulai "Bocor Halus"', angle: 'Biaya admin misterius, markup invoice supplier, dan penundaan deposit kas harian.', cta: 'Download Whitepaper Audit Keuangan Gratis di seventhsoft.com.' },
+      { hook: 'Jangan Mau Direpotkan Input Manual 50 Invoice Tiap Hari!', angle: 'AI OCR Seventhsoft membaca foto kuitansi dan merumuskan draf jurnal otomatis.', cta: 'Coba tes upload invoice via WhatsApp/Telegram bot kami!' },
+      { hook: 'Perbedaan Kas Kecil (Petty Cash) vs Kas Operasional yang Benar', angle: 'Metode Imprest Fund vs Fluctuating Fund agar uang receh kantor gak raib.', cta: 'Tulis di komen, kantor kalian pakai metode yang mana?' },
+      { hook: 'Kenapa Pemilik Bisnis Masih Sering Pakai Rekening Pribadi?', angle: 'Risiko pajak campur aduk dan kesulitan valuasi saat mau ekspansi atau cari investor.', cta: 'Pisahkan keuangan bisnis hari ini juga! Klik link di bio.' },
+      { hook: 'Audit Trail: Jejak Digital yang Bikin Karyawan Fraud Ketar-Ketir', angle: 'Fitur audit log Seventhsoft mencatat setiap perubahan angka dengan timestamp milidetik.', cta: 'Lindungi integritas tim Anda dengan sistem yang transparan.' },
+      { hook: 'Bagaimana AI Agent Menghemat Biaya Operasional Akuntansi Hingga 40%', angle: 'Otomatisasi entri jurnal, rekonsiliasi, dan pelaporan tanpa perlu tambah headcount.', cta: 'Pelajari arsitektur AI Seventhsoft di link bio!' },
+      { hook: '5 Fitur Wajib di Software ERP Sebelum Anda Membeli', angle: 'Multi-gudang, otorisasi berjenjang, integrasi bank, real-time balance, dan enkripsi data.', cta: 'Jangan beli kucing dalam karung! Simpan checklist ini.' },
+      { hook: 'Kenapa Laporan Laba Rugi Anda Cantik tapi Kas Bank Kosong?', angle: 'Perbedaan konsep kas akrual vs kas aktual dan manajemen piutang macet (AR).', cta: 'Cek umur piutang bisnis Anda dengan Aging Report Seventhsoft.' },
+      { hook: 'Tips Rekrut Karyawan Keuangan yang Berintegritas Tinggi', angle: 'Pertanyaan jebakan saat interview dan tes praktik rekonsiliasi kas riil.', cta: 'Komen "INTERVIEW" untuk dapat 10 pertanyaan skrining finance!' }
+    ];
+
+    // Sheet 1: 30 Hari Kalender
+    const calendarRows = [];
+    for (let day = 1; day <= 30; day++) {
+      const dateStr = `${String(day).padStart(2, '0')}/11/2026`;
+      const dateObj = new Date(2026, 10, day); // Bulan 10 = November
+      const dayName = days[dateObj.getDay()];
+      const itemIndex = (day - 1) % hooks.length;
+      const hookData = hooks[itemIndex];
+      const pilar = pilarList[(day - 1) % pilarList.length];
+      const format = formats[(day - 1) % formats.length];
+      const pic = pics[(day - 1) % pics.length];
+      const status = day <= 5 ? 'SIAP POSTING (APPROVED)' : (day <= 15 ? 'DRAFT SCRIPT READY' : 'PLANNED / RISET');
+
+      calendarRows.push({
+        'No': day,
+        'Tanggal': dateStr,
+        'Hari': dayName,
+        'Pilar Konten': pilar,
+        'Format Konten': format,
+        'Judul / Hook Utama': hookData.hook,
+        'Naskah / Sudut Pandang (Angle)': hookData.angle,
+        'Call To Action (CTA)': hookData.cta,
+        'Platform Target': day % 2 === 0 ? 'Instagram, TikTok, LinkedIn' : 'Instagram Reels & Carousel',
+        'PIC Karyawan AI': pic,
+        'Status Produksi': status
+      });
+    }
+
+    const wsCalendar = XLSX.utils.json_to_sheet(calendarRows);
+    XLSX.utils.book_append_sheet(wb, wsCalendar, 'Kalender_30_Hari');
+
+    // Sheet 2: Pilar dan Strategi Konten
+    const pilarRows = [
+      {
+        'Pilar Konten': 'Edukasi Anti-Fraud Finansial',
+        'Bobot %': '35%',
+        'Tujuan': 'Membangun awareness pemilik bisnis atas bahaya fraud internal kasir & purchasing.',
+        'Format Utama': 'Carousel 5 Slide & Reels Hook Kuat',
+        'Target KPI': 'Save Rate > 8%, Share Rate > 5%'
+      },
+      {
+        'Pilar Konten': 'Best Practice SOP Akuntansi',
+        'Bobot %': '25%',
+        'Tujuan': 'Menjadi rujukan praktis tim finance & HRD tentang pencatatan standar PSAK & Pajak.',
+        'Format Utama': 'Infografis Ringkas & Downloadable Checklist',
+        'Target KPI': 'Lead Magnet Downloads > 150/bln'
+      },
+      {
+        'Pilar Konten': 'Fitur Unggulan ERP Seventhsoft',
+        'Bobot %': '20%',
+        'Tujuan': 'Memperlihatkan solusi nyata kemudahan integrasi bank, bot approval & OCR AI.',
+        'Format Utama': 'Video Demo Layar Singkat (60s)',
+        'Target KPI': 'DM Inquiry / Permintaan Demo > 30'
+      },
+      {
+        'Pilar Konten': 'Studi Kasus & Kerugian Bisnis Nyata',
+        'Bobot %': '15%',
+        'Tujuan': 'Social proof dan relevansi kasus di dunia nyata (distributor, retail, manufaktur).',
+        'Format Utama': 'Storytelling Carousel & Wawancara Singkat',
+        'Target KPI': 'Engagement Rate > 4.5%'
+      },
+      {
+        'Pilar Konten': 'Interaktif, QnA & Budaya Tim AI',
+        'Bobot %': '5%',
+        'Tujuan': 'Membangun kedekatan dengan audiens dan memamerkan simulasi virtual office 30 karyawan.',
+        'Format Utama': 'Story Polling & Cuplikan Pixel Office',
+        'Target KPI': 'Story Reply & Interaksi Akun'
+      }
+    ];
+    const wsPilar = XLSX.utils.json_to_sheet(pilarRows);
+    XLSX.utils.book_append_sheet(wb, wsPilar, 'Pilar_dan_KPI');
+
+    // Sheet 3: SOP Workflow Produksi Konten
+    const sopRows = [
+      { 'Tahap': 'Tahap 1: Riset & Ideasi', 'PIC': 'Bagus Pratama (AI Sales Lead)', 'Deadline': 'Setiap Kamis', 'Output': 'Daftar 7 Hook & Outline Konten Mingguan' },
+      { 'Tahap': 'Tahap 2: Validasi Data Akuntansi', 'PIC': 'Lina (Akuntansi) & Doni (Payroll)', 'Deadline': 'Setiap Jumat', 'Output': 'Verifikasi angka, pasal perpajakan, dan keakuratan jurnal' },
+      { 'Tahap': 'Tahap 3: Desain Slide & Reels', 'PIC': 'Sarah (Frontend UI) & Kevin', 'Deadline': 'Setiap Sabtu', 'Output': 'Aset Figma/Canva 1080x1350 dan render video MP4' },
+      { 'Tahap': 'Tahap 4: Review Final & Approval', 'PIC': 'Bpk. Mikhael (Mentor / Management)', 'Deadline': 'Setiap Minggu', 'Output': 'Status Siap Tayang via Bot Telegram' },
+      { 'Tahap': 'Tahap 5: Distribusi & Engagement', 'PIC': 'Bagus Pratama & Bot Automation', 'Deadline': 'Senin - Minggu 11.30 & 19.00', 'Output': 'Posting serentak di Instagram, TikTok, dan LinkedIn' }
+    ];
+    const wsSop = XLSX.utils.json_to_sheet(sopRows);
+    XLSX.utils.book_append_sheet(wb, wsSop, 'SOP_Workflow_Produksi');
+
+    const fileName = `Kalender_Konten_Sosmed_30_Hari_Seventhsoft_${timestamp}.xlsx`;
+    const filePath = path.join(EXPORTS_DIR, fileName);
+    XLSX.writeFile(wb, filePath);
+    console.log(`[ReportGenerator] Kalender Konten 30 Hari berhasil digenerate di: ${filePath}`);
+    return filePath;
+  }
 }

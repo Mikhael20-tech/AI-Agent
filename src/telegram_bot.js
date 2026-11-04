@@ -1,6 +1,6 @@
 import { db } from './database.js';
 import { LLMService } from './llm_service.js';
-import { sendFileToTelegram } from './send_telegram_file.js';
+import { sendFileToTelegram, sendVoiceToTelegram, generateIndonesianTtsAudio } from './send_telegram_file.js';
 import { ReportGenerator } from './report_generator.js';
 import { OCRService } from './ocr_service.js';
 
@@ -354,16 +354,18 @@ export class TelegramBotService {
         const rawHasPayroll = /\b(gaji|payroll|upah|slip|tunjangan|bpjs|pph\s*21)\b/i.test(rawText);
         const rawHasPdf = /\b(pdf|dokumen)\b/i.test(rawText);
         const rawHasExcel = /\b(excel|xlsx|spreadsheet)\b/i.test(rawText);
+        const rawHasCalendar = /\b(kalender|jadwal|calendar|schedule|jadwal\s*konten|plan\s*konten)\b/i.test(rawText);
+        const rawHasVoice = /\b(voice|vn|suara|audio|pesan suara|bicara|ngomong|bicaralah|dengarkan)\b/i.test(rawText) || rawText.startsWith('/voice');
         const rawHasDocGeneral = /(rekap|laporan|export|unduh|download|minta.*file|kirim.*file|buatkan.*file)/i.test(rawText);
 
-        const hasExplicitSubject = rawHasPpt || rawHasImage || rawHasPayroll || rawHasPdf || rawHasExcel || /(pajak|penjualan|rekon|audit|faktur)/i.test(rawText);
+        const hasExplicitSubject = rawHasPpt || rawHasImage || rawHasPayroll || rawHasPdf || rawHasExcel || rawHasCalendar || /(pajak|penjualan|rekon|audit|faktur)/i.test(rawText);
         const userAgrees = /^(ya|ya\s+tolong|boleh|ok|oke|siap|kirim|buatkan|tolong|silakan|minta|lanjut|bikin)/i.test(rawText.trim()) || /(buatkan\s*ya|tolong\s*buatkan|kirimkan|minta\s*tolong)/i.test(rawText);
 
         const isImageRequest = rawHasImage || (!hasExplicitSubject && /(gambar|grafik|chart|diagram)/i.test(lastAssistantMsg) && userAgrees);
-        const isDirectRequest = rawHasPpt || rawHasImage || rawHasPayroll || rawHasPdf || rawHasExcel || rawHasDocGeneral;
+        const isDirectRequest = rawHasPpt || rawHasImage || rawHasPayroll || rawHasPdf || rawHasExcel || rawHasCalendar || rawHasDocGeneral;
         const isRequestingFile = isDirectRequest || (prevOfferedFile && userAgrees);
 
-        const chatActionType = isImageRequest ? 'upload_photo' : (isRequestingFile ? 'upload_document' : 'typing');
+        const chatActionType = rawHasVoice ? 'record_voice' : (isImageRequest ? 'upload_photo' : (isRequestingFile ? 'upload_document' : 'typing'));
         await this.sendChatAction(chatId, chatActionType);
 
         // Deteksi jika user mengajak traktir kopi / ngantri
@@ -380,12 +382,19 @@ export class TelegramBotService {
             const effectiveText = hasExplicitSubject ? `${rawText} ${contextText}` : contextText;
 
             const wantsPpt = rawHasPpt || /\b(ppt|pptx|powerpoint|slide|presentasi)\b/i.test(effectiveText);
-            const wantsImage = rawHasImage || (!rawHasPayroll && !rawHasPdf && !rawHasExcel && /(gambar|grafik|chart|diagram|infografis|visual|plot|skema)/i.test(effectiveText));
+            const wantsCalendar = rawHasCalendar || /\b(kalender|jadwal|calendar|schedule)\b/i.test(effectiveText);
+            const wantsImage = rawHasImage || (!rawHasPayroll && !rawHasPdf && !rawHasExcel && !rawHasCalendar && /(gambar|grafik|chart|diagram|infografis|visual|plot|skema)/i.test(effectiveText));
             const isPayroll = rawHasPayroll || /\b(gaji|payroll|upah|slip|tunjangan|bpjs|pph\s*21)\b/i.test(effectiveText);
             const wantsPdf = rawHasPdf || /\b(pdf|dokumen)\b/i.test(effectiveText);
             const wantsExcel = rawHasExcel || /\b(excel|xlsx|spreadsheet|tabel|rekap)\b/i.test(effectiveText);
 
-            if (wantsPpt) {
+            if (wantsCalendar) {
+              console.log(`[TELEGRAM CALENDAR EXCEL] Mengenerate file Kalender Konten 30 Hari untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
+              const calendarPath = ReportGenerator.generateContentCalendarExcel();
+              const caption = `📅 <b>Kalender Konten Sosmed 30 Hari Seventhsoft (EXCEL)</b>\nPeriode: November 2026\n3 Sheet: Kalender_30_Hari, Pilar_dan_KPI, SOP_Produksi.\nDisiapkan oleh Bagus Pratama (Enterprise Sales & AI Content Lead).`;
+              await sendFileToTelegram(calendarPath, caption, chatId);
+              fileSent = true;
+            } else if (wantsPpt) {
               console.log(`[TELEGRAM PPT GENERATE] Mengenerate file PPTX presentasi untuk ${fromUser?.first_name || 'User'} (${chatId})...`);
               const pptPath = await ReportGenerator.generateFraudPreventionPptx('Strategi Pencegahan Pencurian Keuangan');
               const caption = `📊 <b>File Presentasi PowerPoint (.PPTX) Siap Pakai</b>\nJudul: <i>Strategi Pencegahan Pencurian Keuangan & Kontrol Internal</i>\nTotal: 8 Slide Profesional (Bisa Langsung Diedit di PowerPoint / Google Slides)\nDisiapkan otomatis oleh Bagus Pratama (Enterprise Sales Lead).`;
@@ -485,6 +494,30 @@ export class TelegramBotService {
 
           // Kirim balasan Telegram
           await this.sendCustomMessage(chatId, `💬 <b>${reply.name} (${reply.role}):</b>\n"${reply.speech}"`);
+
+          // Jika user meminta voice note / suara / bicara, buat audio MP3 dan kirimkan langsung!
+          if (rawHasVoice) {
+            try {
+              await this.sendChatAction(chatId, 'record_voice');
+              // Ambil maksimal 300 karakter untuk audio agar renyah dan cepat didengar
+              const voiceScript = reply.speech
+                .replace(/<[^>]+>/g, '')
+                .replace(/[*_`#]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 320);
+
+              const ttsResult = await generateIndonesianTtsAudio(voiceScript);
+              await sendVoiceToTelegram(
+                ttsResult.filePath,
+                `🎙️ <b>Voice Note: ${reply.name} (${reply.role})</b>`,
+                chatId
+              );
+              console.log(`[TELEGRAM VOICE NOTE] Berhasil dikirim ke ${chatId} (${ttsResult.filePath})`);
+            } catch (vErr) {
+              console.warn('[TELEGRAM VOICE NOTE] Gagal mengirim VN:', vErr.message);
+            }
+          }
         }
       }
     } catch (err) {

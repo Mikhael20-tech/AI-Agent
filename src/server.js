@@ -38,6 +38,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
+const VOICE_DIR = isVercel ? '/tmp/voice' : path.join(__dirname, '../uploads/voice');
+if (!fs.existsSync(VOICE_DIR)) {
+  fs.mkdirSync(VOICE_DIR, { recursive: true });
+}
+app.use('/voice', express.static(VOICE_DIR));
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+});
+
 // Inisialisasi Layanan & AI Agent
 const telegramService = new TelegramBotService(eventBus);
 const agent1 = new TransactionDataEntryAgent(eventBus);
@@ -260,6 +270,45 @@ app.get('/api/export-excel', async (req, res) => {
     const type = req.query.type || 'all';
     const excelPath = ReportGenerator.generateExcelReport(type);
     res.download(excelPath);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7.3 Download PPTX Presentasi Edukasi Anti-Fraud
+app.get('/api/download/pptx', async (req, res) => {
+  try {
+    const { ReportGenerator } = await import('./report_generator.js');
+    const title = req.query.title || 'Strategi Pencegahan Pencurian Keuangan';
+    const pptPath = await ReportGenerator.generateFraudPreventionPptx(title);
+    res.download(pptPath);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7.4 Download Excel Kalender Konten Sosmed 30 Hari
+app.get('/api/download/calendar-excel', async (req, res) => {
+  try {
+    const { ReportGenerator } = await import('./report_generator.js');
+    const calPath = ReportGenerator.generateContentCalendarExcel();
+    res.download(calPath);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7.5 API Voice Note Synthesizer (Google Indonesian TTS)
+app.post('/api/voice/generate', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, error: 'Teks tidak boleh kosong.' });
+    }
+    const { generateIndonesianTtsAudio } = await import('./send_telegram_file.js');
+    const result = await generateIndonesianTtsAudio(text);
+    const audioUrl = `/voice/${path.basename(result.filePath)}`;
+    res.json({ success: true, audioUrl, filePath: result.filePath });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
