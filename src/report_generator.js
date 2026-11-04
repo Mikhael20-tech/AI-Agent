@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import PDFDocument from 'pdfkit';
 import pptxgen from 'pptxgenjs';
 import JSZip from 'jszip';
+import sharp from 'sharp';
 import { db } from './database.js';
 import { fileURLToPath } from 'url';
 
@@ -1092,6 +1093,241 @@ export class ReportGenerator {
     const filePath = path.join(EXPORTS_DIR, fileName);
     XLSX.writeFile(wb, filePath);
     console.log(`[ReportGenerator] Kalender Konten 30 Hari berhasil digenerate di: ${filePath}`);
+    return filePath;
+  }
+
+  /**
+   * Menghasilkan file gambar Poster Edukasi Anti-Fraud (.PNG) beresolusi tinggi (1080 x 1350 px, rasio 4:5 Instagram Feed)
+   * Menggunakan SVG vector rendering & Sharp image engine
+   * @param {object} [customOptions]
+   * @returns {Promise<string>} - Absolute path file .png
+   */
+  static async generateSocialMediaPosterPng(customOptions = {}) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const fileName = `Poster_Edukasi_Fraud_Seventhsoft_${timestamp}.png`;
+    const filePath = path.join(EXPORTS_DIR, fileName);
+
+    const title = customOptions.title || 'WASPADA FRAUD KEUANGAN BISNIS!';
+    const subtitle = customOptions.subtitle || '3 Titik Rawan Kebocoran Kas yang Sering Menguras Profit Perusahaan';
+
+    const svg = `
+<svg width="1080" height="1350" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="mainBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#050814"/>
+      <stop offset="35%" stop-color="#0c1736"/>
+      <stop offset="70%" stop-color="#09132b"/>
+      <stop offset="100%" stop-color="#04060d"/>
+    </linearGradient>
+
+    <!-- Accent Header Gradient -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+
+    <!-- Card Background Gradient -->
+    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111c3a" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0b1328" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <!-- Security Box Gradient -->
+    <linearGradient id="secBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c2340"/>
+      <stop offset="100%" stop-color="#051528"/>
+    </linearGradient>
+
+    <!-- Badges -->
+    <linearGradient id="badgeBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <linearGradient id="badgeRed" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e11d48"/>
+      <stop offset="100%" stop-color="#f43f5e"/>
+    </linearGradient>
+
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- 1. Background Frame -->
+  <rect width="1080" height="1350" fill="url(#mainBg)"/>
+
+  <!-- Ambient Glowing Orbs -->
+  <circle cx="950" cy="150" r="320" fill="#0284c7" opacity="0.12" filter="blur(60px)"/>
+  <circle cx="100" cy="800" r="280" fill="#3b82f6" opacity="0.08" filter="blur(50px)"/>
+  <circle cx="900" cy="1150" r="260" fill="#10b981" opacity="0.08" filter="blur(60px)"/>
+
+  <!-- Top Decorative Header Bar -->
+  <rect x="0" y="0" width="1080" height="10" fill="url(#accentGrad)"/>
+
+  <!-- 2. Header Brand Section -->
+  <g transform="translate(60, 55)">
+    <!-- Brand Tag -->
+    <rect x="0" y="0" width="380" height="36" rx="18" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+    <circle cx="20" cy="18" r="6" fill="#38bdf8"/>
+    <text x="36" y="23" font-family="'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#94a3b8" letter-spacing="1.5">
+      PT SEVENTHSOFT TEKNOLOGI INDONESIA
+    </text>
+
+    <!-- Category Pill Right -->
+    <rect x="680" y="0" width="280" height="36" rx="18" fill="#0c4a6e" stroke="#0284c7" stroke-width="1.5"/>
+    <text x="820" y="23" font-family="'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#38bdf8" text-anchor="middle" letter-spacing="1">
+      SERI EDUKASI BISNIS 2026
+    </text>
+
+    <!-- Main Title -->
+    <text x="480" y="115" font-family="'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="-0.5">
+      ${title}
+    </text>
+    <text x="480" y="155" font-family="'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="400" fill="#94a3b8" text-anchor="middle">
+      ${subtitle}
+    </text>
+  </g>
+
+  <!-- 3. Card 1: Kasir & POS -->
+  <g transform="translate(60, 245)" filter="url(#cardShadow)">
+    <rect width="960" height="195" rx="20" fill="url(#cardBg)" stroke="#1e293b" stroke-width="1.5"/>
+    <!-- Left Indicator Strip -->
+    <rect x="0" y="0" width="8" height="195" rx="4" fill="#f43f5e"/>
+    
+    <!-- Number Badge -->
+    <rect x="35" y="30" width="56" height="56" rx="16" fill="url(#badgeRed)"/>
+    <text x="63" y="66" font-family="'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle">01</text>
+    
+    <!-- Content -->
+    <rect x="110" y="30" width="130" height="24" rx="6" fill="#881337"/>
+    <text x="175" y="46" font-family="'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#fda4af" text-anchor="middle">AREA KASIR / POS</text>
+    
+    <text x="110" y="80" font-family="'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" fill="#ffffff">
+      Manipulasi Tombol Void &amp; Diskon Manual Kasir
+    </text>
+    <text x="110" y="112" font-family="'Segoe UI', Roboto, sans-serif" font-size="15" fill="#94a3b8">
+      Kasir menghapus item nota setelah pelanggan membayar tunai, lalu uang tunai tidak disetor ke brankas.
+    </text>
+    
+    <rect x="110" y="132" width="815" height="40" rx="8" fill="#1e1b4b" stroke="#312e81" stroke-width="1"/>
+    <text x="125" y="157" font-family="'Segoe UI', Roboto, sans-serif" font-size="13.5" font-weight="600" fill="#a5b4fc">
+      💡 Solusi Seventhsoft: Kunci otorisasi tombol void kasir via Scan Barcode Supervisor &amp; Log Notifikasi.
+    </text>
+  </g>
+
+  <!-- 4. Card 2: Purchasing & Ghost Vendor -->
+  <g transform="translate(60, 465)" filter="url(#cardShadow)">
+    <rect width="960" height="195" rx="20" fill="url(#cardBg)" stroke="#1e293b" stroke-width="1.5"/>
+    <!-- Left Indicator Strip -->
+    <rect x="0" y="0" width="8" height="195" rx="4" fill="#f59e0b"/>
+    
+    <!-- Number Badge -->
+    <rect x="35" y="30" width="56" height="56" rx="16" fill="#b45309"/>
+    <text x="63" y="66" font-family="'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle">02</text>
+    
+    <!-- Content -->
+    <rect x="110" y="30" width="160" height="24" rx="6" fill="#451a03"/>
+    <text x="190" y="46" font-family="'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#fde68a" text-anchor="middle">PURCHASING &amp; PENGADAAN</text>
+    
+    <text x="110" y="80" font-family="'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" fill="#ffffff">
+      Pengadaan Fiktif (Ghost Vendor) &amp; Markup Tagihan
+    </text>
+    <text x="110" y="112" font-family="'Segoe UI', Roboto, sans-serif" font-size="15" fill="#94a3b8">
+      Membuat PO fiktif ke rekening rekanan gelap tanpa verifikasi barang fisik di gudang penyimpanan.
+    </text>
+    
+    <rect x="110" y="132" width="815" height="40" rx="8" fill="#1e1b4b" stroke="#312e81" stroke-width="1"/>
+    <text x="125" y="157" font-family="'Segoe UI', Roboto, sans-serif" font-size="13.5" font-weight="600" fill="#a5b4fc">
+      💡 Solusi Seventhsoft: Three-Way Matching wajib (PO vs Surat Penerimaan Gudang vs Faktur Pajak Resmi).
+    </text>
+  </g>
+
+  <!-- 5. Card 3: Rekonsiliasi Bank Mengendap -->
+  <g transform="translate(60, 685)" filter="url(#cardShadow)">
+    <rect width="960" height="195" rx="20" fill="url(#cardBg)" stroke="#1e293b" stroke-width="1.5"/>
+    <!-- Left Indicator Strip -->
+    <rect x="0" y="0" width="8" height="195" rx="4" fill="#0284c7"/>
+    
+    <!-- Number Badge -->
+    <rect x="35" y="30" width="56" height="56" rx="16" fill="url(#badgeBlue)"/>
+    <text x="63" y="66" font-family="'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle">03</text>
+    
+    <!-- Content -->
+    <rect x="110" y="30" width="165" height="24" rx="6" fill="#0c4a6e"/>
+    <text x="192" y="46" font-family="'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#7dd3fc" text-anchor="middle">KEUANGAN &amp; BANK MUTASI</text>
+    
+    <text x="110" y="80" font-family="'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" fill="#ffffff">
+      Rekonsiliasi Bank yang Menumpuk di Akhir Bulan
+    </text>
+    <text x="110" y="112" font-family="'Segoe UI', Roboto, sans-serif" font-size="15" fill="#94a3b8">
+      Selisih kas dan rekening koran tidak dicek harian, sehingga mutasi siluman terlambat diinvestigasi.
+    </text>
+    
+    <rect x="110" y="132" width="815" height="40" rx="8" fill="#1e1b4b" stroke="#312e81" stroke-width="1"/>
+    <text x="125" y="157" font-family="'Segoe UI', Roboto, sans-serif" font-size="13.5" font-weight="600" fill="#a5b4fc">
+      💡 Solusi Seventhsoft: Auto-Matching Mutasi e-Banking harian dengan deteksi AI selisih nominal otomatis.
+    </text>
+  </g>
+
+  <!-- 6. Hero Solution Box: Four-Eyes Principle -->
+  <g transform="translate(60, 905)" filter="url(#cardShadow)">
+    <rect width="960" height="230" rx="22" fill="url(#secBg)" stroke="#0284c7" stroke-width="2.5"/>
+    
+    <!-- Inner Accent Glow -->
+    <rect x="25" y="25" width="910" height="180" rx="16" fill="#0c1e38" stroke="#1e3a8a" stroke-width="1"/>
+    
+    <text x="480" y="65" font-family="'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="800" fill="#38bdf8" text-anchor="middle" letter-spacing="2">
+      🛡️ STANDAR SISTEM TATA KELOLA KORPORAT
+    </text>
+    <text x="480" y="105" font-family="'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="900" fill="#ffffff" text-anchor="middle">
+      Four-Eyes Principle: Otorisasi Ganda Sebagai Kunci Aman
+    </text>
+    <text x="480" y="145" font-family="'Segoe UI', Roboto, sans-serif" font-size="15" fill="#cbd5e1" text-anchor="middle">
+      Pemisahan mutlak wewenang antara Pembuat Draft (Maker) dan Penyetujui (Checker/Finance Lead).
+    </text>
+    <text x="480" y="175" font-family="'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="600" fill="#38bdf8" text-anchor="middle">
+      Setiap transaksi pengeluaran wajib otorisasi 2 arah via tombol notifikasi Telegram resmi.
+    </text>
+  </g>
+
+  <!-- 7. Bottom Call-To-Action (CTA) Footer Bar -->
+  <g transform="translate(0, 1165)">
+    <!-- Footer Background -->
+    <rect width="1080" height="185" fill="#050a17"/>
+    <line x1="0" y1="0" x2="1080" y2="0" stroke="#1e293b" stroke-width="1.5"/>
+
+    <!-- Left Box: Website & Demo -->
+    <text x="60" y="55" font-family="'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700" fill="#38bdf8" letter-spacing="1">
+      KONSULTASI &amp; SISTEM AUDIT GRATIS:
+    </text>
+    <text x="60" y="95" font-family="'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="900" fill="#ffffff">
+      seventhsoft.com
+    </text>
+    <text x="60" y="130" font-family="'Segoe UI', Roboto, sans-serif" font-size="13" fill="#64748b">
+      Software ERP &amp; Akuntansi Indonesia Terpercaya • Berdiri Sejak 2005
+    </text>
+
+    <!-- Right Box: Contact Button Pill -->
+    <rect x="710" y="45" width="310" height="75" rx="16" fill="url(#badgeBlue)" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="865" y="77" font-family="'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="800" fill="#e0f2fe" text-anchor="middle">
+      HUBUNGI KONSULTAN:
+    </text>
+    <text x="865" y="103" font-family="'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="900" fill="#ffffff" text-anchor="middle">
+      0812-XXXX-XXXX
+    </text>
+  </g>
+</svg>
+    `.trim();
+
+    const svgBuffer = Buffer.from(svg);
+    await sharp(svgBuffer)
+      .png({ quality: 95, compressionLevel: 8 })
+      .toFile(filePath);
+
+    console.log(`[ReportGenerator] Poster Edukasi PNG 1080x1350 berhasil digenerate di: ${filePath}`);
     return filePath;
   }
 }

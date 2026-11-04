@@ -441,7 +441,7 @@
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* 1. PPTX Generator */}
                 <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 hover:border-blue-500/50 transition group flex flex-col justify-between">
                   <div>
@@ -484,7 +484,28 @@
                   </a>
                 </div>
 
-                {/* 3. Payroll PDF */}
+                {/* 3. Social Media PNG Poster (NEW) */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 hover:border-violet-500/50 transition group flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-violet-400 bg-violet-950/60 px-2 py-0.5 rounded border border-violet-800/60">POSTER .PNG</span>
+                      <span className="text-xs text-slate-500">1080×1350</span>
+                    </div>
+                    <h4 className="font-semibold text-sm text-slate-100 group-hover:text-violet-400 transition">Poster Edukasi Feed IG 4:5</h4>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                      Poster infografis 1080×1350px siap upload ke Instagram & LinkedIn dengan visual 3 modus fraud dan Four-Eyes Principle.
+                    </p>
+                  </div>
+                  <a 
+                    href="/api/download/poster-png" 
+                    download
+                    className="mt-4 w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-medium text-xs py-2 px-3 rounded-lg text-center flex items-center justify-center space-x-1.5 shadow-md transition"
+                  >
+                    <span>🎨 Unduh Poster .PNG</span>
+                  </a>
+                </div>
+
+                {/* 4. Payroll PDF */}
                 <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 hover:border-rose-500/50 transition group flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -505,7 +526,7 @@
                   </a>
                 </div>
 
-                {/* 4. Sales & Finance Excel */}
+                {/* 5. Sales & Finance Excel */}
                 <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 hover:border-cyan-500/50 transition group flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -859,3 +880,4 @@
   </script>
 </body>
 </html>
+

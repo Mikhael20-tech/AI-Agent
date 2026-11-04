@@ -298,6 +298,20 @@ app.get('/api/download/calendar-excel', async (req, res) => {
   }
 });
 
+// 7.4.1 Download Poster Edukasi PNG 1080x1350
+app.get('/api/download/poster-png', async (req, res) => {
+  try {
+    const { ReportGenerator } = await import('./report_generator.js');
+    const posterPath = await ReportGenerator.generateSocialMediaPosterPng({
+      title: req.query.title,
+      subtitle: req.query.subtitle
+    });
+    res.download(posterPath);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 7.5 API Voice Note Synthesizer (Google Indonesian TTS)
 app.post('/api/voice/generate', async (req, res) => {
   try {
