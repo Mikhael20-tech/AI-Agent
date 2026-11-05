@@ -29,7 +29,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Normalisasi input dari Telegram Trigger atau Webhook\nlet rawPrompt = '4 Pilar Perlindungan Keuangan Bisnis dan Pencegahan Fraud';\nlet chatId = 'YOUR_TELEGRAM_CHAT_ID';\n\nif ($input.first().json.message && $input.first().json.message.text) {\n  rawPrompt = $input.first().json.message.text;\n  chatId = $input.first().json.message.chat.id;\n} else if ($input.first().json.body && $input.first().json.body.topik) {\n  rawPrompt = $input.first().json.body.topik;\n  chatId = $input.first().json.body.chat_id || chatId;\n} else if ($input.first().json.query && $input.first().json.query.topik) {\n  rawPrompt = $input.first().json.query.topik;\n  chatId = $input.first().json.query.chat_id || chatId;\n}\n\nreturn {\n  json: {\n    topik_asli: rawPrompt,\n    chat_id: chatId\n  }\n};"
+        "jsCode": "// 1. Normalisasi input dari Telegram Trigger atau Webhook\nlet rawPrompt = '4 Pilar Perlindungan Keuangan Bisnis dan Pencegahan Fraud';\nlet chatId = '7987566473';\n\nif ($input.first().json.message && $input.first().json.message.text) {\n  rawPrompt = $input.first().json.message.text;\n  chatId = $input.first().json.message.chat.id;\n} else if ($input.first().json.body && $input.first().json.body.topik) {\n  rawPrompt = $input.first().json.body.topik;\n  chatId = $input.first().json.body.chat_id || chatId;\n} else if ($input.first().json.query && $input.first().json.query.topik) {\n  rawPrompt = $input.first().json.query.topik;\n  chatId = $input.first().json.query.chat_id || chatId;\n}\n\n// 2. Siapkan Prompt visual art style seperti Gemini Web (Background putih solid, kartun lucu outline tegas)\nconst systemInstruction = `Anda adalah Art Director & Content Strategist PT Seventhsoft Teknologi Indonesia. Tugas Anda merancang konsep visual poster infografis edukasi akuntansi dan bisnis yang ramah, bersih, dan menarik (gaya vektor editorial Behance/Dribbble pada background putih bersih seperti Gemini Web).\n\nKeluarkan HANYA JSON murni tanpa markdown triple-backtick:\n{\n  \"judul\": \"Judul Poster Menarik\",\n  \"visual_prompt\": \"A complete 2D vector editorial infographic poster on pure solid white background, cute friendly modern cartoon style with bold clean black outlines, flat vibrant colors: [deskripsi visual spesifik 3-4 elemen kartun lucu seperti perisai uang, celengan babi, grafik naik, gembok aman], high contrast, Behance Dribbble modern vector style, professional graphic design masterpiece\",\n  \"caption_ig\": \"Draft caption edukatif Indonesia untuk Instagram/Telegram lengkap dengan poin solusi dan hashtag Seventhsoft\"\n}\n\nTopik yang diminta: ${rawPrompt}`;\n\nreturn {\n  json: {\n    topik_asli: rawPrompt,\n    chat_id: chatId,\n    gemini_payload: {\n      contents: [\n        {\n          parts: [\n            {\n              text: systemInstruction\n            }\n          ]\n        }\n      ]\n    }\n  }\n};"
       },
       "id": "node-normalize-input",
       "name": "Normalisasi Input Topik",
@@ -52,7 +52,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Anda adalah Art Director & Content Strategist PT Seventhsoft Teknologi Indonesia. Tugas Anda merancang konsep visual poster infografis edukasi akuntansi dan bisnis yang ramah, bersih, dan menarik (gaya vektor editorial Behance/Dribbble pada background putih bersih seperti Gemini Web).\\n\\nKeluarkan HANYA JSON murni tanpa markdown triple-backtick:\\n{\\n  \\\"judul\\\": \\\"Judul Poster Menarik\\\",\\n  \\\"visual_prompt\\\": \\\"A complete 2D vector editorial infographic poster on pure solid white background, cute friendly modern cartoon style with bold clean black outlines, flat vibrant colors: [deskripsi visual spesifik 3-4 elemen kartun lucu seperti perisai uang, celengan babi, grafik naik, gembok aman], high contrast, Behance Dribbble modern vector style, professional graphic design masterpiece\\\",\\n  \\\"caption_ig\\\": \\\"Draft caption edukatif Indonesia untuk Instagram/Telegram lengkap dengan 3 poin solusi dan hashtag Seventhsoft\\\"\\n}\\n\\nTopik yang diminta: \" + $json.topik_asli\n        }\n      ]\n    }\n  ]\n}"
+        "jsonBody": "={{ JSON.stringify($json.gemini_payload) }}"
       },
       "id": "node-gemini-prompt",
       "name": "Google Gemini (Prompt Visual Artist)",
@@ -87,24 +87,18 @@
       "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendPhoto",
-        "sendBinaryData": true,
-        "binaryPropertyName": "data:photo",
-        "bodyParameters": {
+        "sendHeaders": true,
+        "headerParameters": {
           "parameters": [
             {
-              "name": "chat_id",
-              "value": "={{ $('Format URL Pollinations').first().json.chat_id }}"
-            },
-            {
-              "name": "caption",
-              "value": "={{ $('Format URL Pollinations').first().json.caption }}"
-            },
-            {
-              "name": "parse_mode",
-              "value": "HTML"
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  chat_id: $('Format URL Pollinations').first().json.chat_id,\n  photo: $('Format URL Pollinations').first().json.pollinations_url,\n  caption: $('Format URL Pollinations').first().json.caption,\n  parse_mode: 'HTML'\n}) }}"
       },
       "id": "node-send-telegram",
       "name": "Kirim Poster ke Telegram",
@@ -180,6 +174,8 @@
         ]
       ]
     }
+  },
+  "settings": {
+    "executionOrder": "v1"
   }
 }
-

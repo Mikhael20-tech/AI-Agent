@@ -135,3 +135,4 @@ Jika saat meeting terjadi kendala internet kantor lambat atau Telegram down:
   - **Jawaban:** *"Karena Telegram mendukung Inline Callback Button yang aman, gratis, instan, dan para pimpinan bisnis lebih sering membuka smartphone daripada membuka laptop hanya untuk menekan satu tombol persetujuan transfer kas."*
 - **Q3: "Berapa biaya API yang dihabiskan untuk sistem ini?"**
   - **Jawaban:** *"Rp 0, Pak. Untuk naskah & coding kita memakai Google Gemini Flash (kuota gratis), untuk poster memakai Pollinations Turbo (open access), dan database memakai SQLite lokal yang sangat efisien."*
+
