@@ -1111,7 +1111,7 @@ export class ReportGenerator {
     const defaultPrompt = 'A complete 2D vector editorial infographic poster on clean solid white background, cute friendly modern cartoon style with bold clean black outlines, high contrast vibrant colors: in the center a large blue and gold umbrella shield protecting a happy Indonesian business family with money and accounting books, with four cute corner sections: top-left cute pink piggy bank with coins with text Tabungan Darurat, top-right red heart and green medical shield with text Asuransi Jiwa dan Kesehatan, bottom-left upward profit arrow with gold coins with text Investasi Aman, bottom-right golden security padlock with green shield with text Waspada Penipuan. Behance Dribbble clean vector style, high resolution 8k, professional graphic design masterpiece';
 
     const aiPrompt = customOptions.prompt || defaultPrompt;
-    const aiUrl = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(aiPrompt) + '?width=1080&height=1350&nologo=true&model=flux';
+    const aiUrl = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(aiPrompt) + '?width=1080&height=1350&nologo=true&model=turbo';
 
     console.log('[ReportGenerator] Mengunduh poster ilustrasi utuh dari Generative AI Engine...');
     try {

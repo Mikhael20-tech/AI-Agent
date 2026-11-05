@@ -1,0 +1,184 @@
+{
+  "name": "Seventhsoft AI Agent - Auto Poster Edukasi & Sosmed (Pollinations Engine)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "node-tg-trigger",
+      "name": "Telegram Trigger (Perintah Poster)",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [180, 260]
+    },
+    {
+      "parameters": {
+        "path": "generate-poster",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Webhook Trigger (API / Uji Coba Manual)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 460],
+      "webhookId": "generate-poster"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalisasi input dari Telegram Trigger atau Webhook\nlet rawPrompt = '4 Pilar Perlindungan Keuangan Bisnis dan Pencegahan Fraud';\nlet chatId = 'YOUR_TELEGRAM_CHAT_ID';\n\nif ($input.first().json.message && $input.first().json.message.text) {\n  rawPrompt = $input.first().json.message.text;\n  chatId = $input.first().json.message.chat.id;\n} else if ($input.first().json.body && $input.first().json.body.topik) {\n  rawPrompt = $input.first().json.body.topik;\n  chatId = $input.first().json.body.chat_id || chatId;\n} else if ($input.first().json.query && $input.first().json.query.topik) {\n  rawPrompt = $input.first().json.query.topik;\n  chatId = $input.first().json.query.chat_id || chatId;\n}\n\nreturn {\n  json: {\n    topik_asli: rawPrompt,\n    chat_id: chatId\n  }\n};"
+      },
+      "id": "node-normalize-input",
+      "name": "Normalisasi Input Topik",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 360]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=YOUR_GEMINI_API_KEY",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Anda adalah Art Director & Content Strategist PT Seventhsoft Teknologi Indonesia. Tugas Anda merancang konsep visual poster infografis edukasi akuntansi dan bisnis yang ramah, bersih, dan menarik (gaya vektor editorial Behance/Dribbble pada background putih bersih seperti Gemini Web).\\n\\nKeluarkan HANYA JSON murni tanpa markdown triple-backtick:\\n{\\n  \\\"judul\\\": \\\"Judul Poster Menarik\\\",\\n  \\\"visual_prompt\\\": \\\"A complete 2D vector editorial infographic poster on pure solid white background, cute friendly modern cartoon style with bold clean black outlines, flat vibrant colors: [deskripsi visual spesifik 3-4 elemen kartun lucu seperti perisai uang, celengan babi, grafik naik, gembok aman], high contrast, Behance Dribbble modern vector style, professional graphic design masterpiece\\\",\\n  \\\"caption_ig\\\": \\\"Draft caption edukatif Indonesia untuk Instagram/Telegram lengkap dengan 3 poin solusi dan hashtag Seventhsoft\\\"\\n}\\n\\nTopik yang diminta: \" + $json.topik_asli\n        }\n      ]\n    }\n  ]\n}"
+      },
+      "id": "node-gemini-prompt",
+      "name": "Google Gemini (Prompt Visual Artist)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nlet content = '';\nif (response.candidates && response.candidates[0]?.content?.parts?.[0]?.text) {\n  content = response.candidates[0].content.parts[0].text;\n} else if (response.choices && response.choices[0]?.message?.content) {\n  content = response.choices[0].message.content;\n}\n\nconst cleaned = content.replace(/```json/g, '').replace(/```/g, '').trim();\nlet parsed = {};\ntry {\n  parsed = JSON.parse(cleaned);\n} catch(e) {\n  parsed = {\n    judul: '4 Pilar Perlindungan Keuangan Bisnis',\n    visual_prompt: 'A complete 2D vector editorial infographic poster on pure solid white background, cute friendly modern cartoon style with bold clean black outlines: in the center a large blue umbrella shield protecting an Indonesian business family, with piggy bank, gold coins, padlock, upward profit chart, clean vector flat art, Behance style',\n    caption_ig: 'Jangan biarkan kebocoran kas merugikan bisnis Anda! Terapkan 4 pilar kontrol internal akuntansi bersama Seventhsoft. #tipsbisnis #seventhsoft #antifraud'\n  };\n}\n\nconst prevData = $('Normalisasi Input Topik').first().json;\nconst encodedPrompt = encodeURIComponent(parsed.visual_prompt);\n// Pollinations URL model=turbo (100% Gratis, Cepat, Tanpa API Key)\nconst pollinationsUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1080&height=1350&nologo=true&model=turbo`;\n\nreturn {\n  json: {\n    chat_id: prevData.chat_id,\n    judul: parsed.judul,\n    visual_prompt: parsed.visual_prompt,\n    caption: `🎨 <b>${parsed.judul}</b>\\n\\n${parsed.caption_ig}\\n\\n<i>💡 Dibuat otomatis oleh AI Agent Seventhsoft (Pollinations Engine + Gemini).</i>`,\n    pollinations_url: pollinationsUrl\n  }\n};"
+      },
+      "id": "node-build-url",
+      "name": "Format URL Pollinations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 360]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.pollinations_url }}",
+        "responseFormat": "file",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "node-pollinations-download",
+      "name": "Pollinations Engine (Unduh Gambar 1080x1350)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1060, 360]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendPhoto",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data:photo",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Format URL Pollinations').first().json.chat_id }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $('Format URL Pollinations').first().json.caption }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "HTML"
+            }
+          ]
+        }
+      },
+      "id": "node-send-telegram",
+      "name": "Kirim Poster ke Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1280, 360]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger (Perintah Poster)": {
+      "main": [
+        [
+          {
+            "node": "Normalisasi Input Topik",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger (API / Uji Coba Manual)": {
+      "main": [
+        [
+          {
+            "node": "Normalisasi Input Topik",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalisasi Input Topik": {
+      "main": [
+        [
+          {
+            "node": "Google Gemini (Prompt Visual Artist)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini (Prompt Visual Artist)": {
+      "main": [
+        [
+          {
+            "node": "Format URL Pollinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format URL Pollinations": {
+      "main": [
+        [
+          {
+            "node": "Pollinations Engine (Unduh Gambar 1080x1350)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pollinations Engine (Unduh Gambar 1080x1350)": {
+      "main": [
+        [
+          {
+            "node": "Kirim Poster ke Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
